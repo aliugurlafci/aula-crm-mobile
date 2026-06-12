@@ -46,7 +46,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { status } = useAuth();
   const authed = status === 'authenticated';
   const authedRef = useRef(authed);
-  authedRef.current = authed;
+  useEffect(() => {
+    authedRef.current = authed;
+  }, [authed]);
 
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);

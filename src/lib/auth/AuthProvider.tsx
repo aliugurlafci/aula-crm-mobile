@@ -13,16 +13,17 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import * as SecureStore from 'expo-secure-store';
+
 import {
+  ApiRequestError,
   loadBaseUrl,
   setAuthToken,
   setCsrfToken,
   takeCapturedSessionToken,
 } from '../api/client';
 import { auth } from '../api/endpoints';
-import { ApiRequestError } from '../api/client';
 import { kvGet, kvSet } from '../db/database';
-import * as SecureStore from 'expo-secure-store';
 import { can, canEntity, grantsForRoles, hasScreen } from './permissions';
 import type { Me } from '../types';
 

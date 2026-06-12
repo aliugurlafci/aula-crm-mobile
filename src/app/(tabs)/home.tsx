@@ -13,7 +13,7 @@ import { useSync } from '@/lib/sync/SyncProvider';
 import { allStock, productCount } from '@/lib/db/products';
 import { kvGet } from '@/lib/db/database';
 import { resolveProduct } from '@/lib/pos/resolve';
-import { initials, money, relativeTime } from '@/lib/format';
+import { initials, relativeTime } from '@/lib/format';
 import { useTheme } from '@/lib/theme/ThemeProvider';
 import { Spacing } from '@/lib/theme/tokens';
 import { Screen } from '@/components/Screen';

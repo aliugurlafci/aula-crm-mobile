@@ -6,7 +6,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
-import { useSync } from '@/lib/sync/SyncProvider';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { searchProducts } from '@/lib/db/products';
 import { resolveProduct } from '@/lib/pos/resolve';
@@ -30,7 +29,6 @@ interface LabelItem {
 
 export default function LabelsScreen() {
   const { palette } = useTheme();
-  const { online } = useSync();
   const [items, setItems] = useState<LabelItem[]>([]);
   const [search, setSearch] = useState('');
   const debounced = useDebounce(search, 200);
