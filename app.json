@@ -28,6 +28,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
+        "android.permission.CAMERA",
         "android.permission.CAMERA"
       ]
     },
@@ -71,6 +72,12 @@
         "projectId": "9e8d5fb4-600e-4359-a396-9d964d3e42fe"
       }
     },
-    "owner": "ugurcorp"
+    "owner": "ugurcorp",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9e8d5fb4-600e-4359-a396-9d964d3e42fe"
+    }
   }
 }
