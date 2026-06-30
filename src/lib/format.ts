@@ -3,6 +3,7 @@
  * `round2` (Math.round(n*100)/100) so client totals agree with server totals.
  */
 import type { SaleLine } from './types';
+import type { Lang } from './i18n/translations';
 
 export const round2 = (n: number): number => Math.round((Number(n) || 0) * 100) / 100;
 
@@ -77,16 +78,24 @@ export function initials(name: string): string {
     .join('');
 }
 
-export function relativeTime(iso: string | null | undefined): string {
+/** Localised unit strings for `relativeTime`; `{n}` is the count. */
+const REL_TIME: Record<Lang, { now: string; min: string; hr: string; day: string }> = {
+  en: { now: 'just now', min: '{n}m ago', hr: '{n}h ago', day: '{n}d ago' },
+  tr: { now: 'az önce', min: '{n} dk önce', hr: '{n} sa önce', day: '{n} gün önce' },
+  de: { now: 'gerade eben', min: 'vor {n} Min.', hr: 'vor {n} Std.', day: 'vor {n} Tg.' },
+};
+
+export function relativeTime(iso: string | null | undefined, lang: Lang = 'en'): string {
   if (!iso) return '';
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return '';
+  const u = REL_TIME[lang] ?? REL_TIME.en;
   const diff = Date.now() - then;
   const min = Math.round(diff / 60000);
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min}m ago`;
+  if (min < 1) return u.now;
+  if (min < 60) return u.min.replace('{n}', String(min));
   const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h ago`;
+  if (hr < 24) return u.hr.replace('{n}', String(hr));
   const day = Math.round(hr / 24);
-  return `${day}d ago`;
+  return u.day.replace('{n}', String(day));
 }

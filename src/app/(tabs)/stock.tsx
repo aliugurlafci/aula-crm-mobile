@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useSync } from '@/lib/sync/SyncProvider';
 import { allStock } from '@/lib/db/products';
@@ -13,18 +13,28 @@ import { useDebounce } from '@/lib/hooks/useDebounce';
 import { money, qty } from '@/lib/format';
 import type { StockRow } from '@/lib/types';
 import { useTheme } from '@/lib/theme/ThemeProvider';
+import { useI18n } from '@/lib/i18n/LanguageProvider';
 import { Spacing } from '@/lib/theme/tokens';
 import { Screen } from '@/components/Screen';
+import { useTabBarHeight } from '@/components/GlassTabBar';
 import { Card, Input, Badge, Text, EmptyState, IconButton } from '@/components/ui';
 
 export default function StockScreen() {
   const router = useRouter();
   const { palette } = useTheme();
+  const { t } = useI18n();
+  const tabBarSpace = useTabBarHeight();
   const { syncing, sync, lastSyncAt } = useSync();
+  const { low } = useLocalSearchParams<{ low?: string }>();
   const [rows, setRows] = useState<StockRow[]>([]);
   const [search, setSearch] = useState('');
-  const [lowOnly, setLowOnly] = useState(false);
+  const [lowOnly, setLowOnly] = useState(low === '1');
   const debounced = useDebounce(search, 200);
+
+  // Sync the low-stock filter to the deep-link param (Home "Low stock" KPI).
+  useEffect(() => {
+    setLowOnly(low === '1');
+  }, [low]);
 
   const load = useCallback(async () => setRows(await allStock()), []);
   useEffect(() => {
@@ -45,11 +55,11 @@ export default function StockScreen() {
   }, [rows, debounced, lowOnly]);
 
   return (
-    <Screen title="Stock" subtitle={`${rows.length} stock records`}>
+    <Screen title={t('stock.title')} subtitle={t('stock.records', { count: rows.length })}>
       <View style={{ gap: Spacing.sm }}>
         <Input
           icon="search"
-          placeholder="Search product, SKU or barcode…"
+          placeholder={t('stock.searchPlaceholder')}
           value={search}
           onChangeText={setSearch}
           autoCorrect={false}
@@ -62,17 +72,17 @@ export default function StockScreen() {
             />
           }
         />
-        {lowOnly ? <Badge tone="warning" label="Showing low stock only" /> : null}
+        {lowOnly ? <Badge tone="warning" label={t('stock.lowOnly')} /> : null}
       </View>
 
       <FlatList
         style={{ flex: 1, marginTop: Spacing.sm }}
-        contentContainerStyle={{ paddingBottom: 120, gap: Spacing.sm }}
+        contentContainerStyle={{ paddingBottom: tabBarSpace + Spacing.md, gap: Spacing.sm }}
         data={filtered}
         keyExtractor={(r, i) => `${r.productId}:${r.warehouseId}:${i}`}
         refreshControl={<RefreshControl refreshing={syncing} onRefresh={() => sync('stock-refresh')} tintColor={palette.primary} />}
         ListEmptyComponent={
-          <EmptyState icon="cube-outline" title="No stock data" hint="Sync while online to load inventory levels." />
+          <EmptyState icon="cube-outline" title={t('stock.empty')} hint={t('stock.emptyHint')} />
         }
         renderItem={({ item }) => (
           <Pressable onPress={() => router.push(`/product/${item.productId}`)}>
@@ -92,7 +102,7 @@ export default function StockScreen() {
                     {qty(item.onHand)}
                   </Text>
                   {item.low ? (
-                    <Badge tone="danger" label={`reorder ≤ ${qty(item.reorderLevel)}`} />
+                    <Badge tone="danger" label={t('stock.reorder', { n: qty(item.reorderLevel) })} />
                   ) : (
                     <Text variant="caption" tone="muted2">
                       {money(item.value)}

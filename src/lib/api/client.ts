@@ -52,7 +52,7 @@ export class ApiRequestError extends Error {
 const BASE_URL_KEY = 'aula.api.baseUrl';
 const DEFAULT_BASE_URL =
   (Constants.expoConfig?.extra as { defaultApiBaseUrl?: string } | undefined)?.defaultApiBaseUrl ??
-  'http://localhost:4000';
+  'http://192.168.79.31:4000';
 
 // ---- runtime state (set by AuthProvider / Settings) -----------------------
 let baseUrl = DEFAULT_BASE_URL;

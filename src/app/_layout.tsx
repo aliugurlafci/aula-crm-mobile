@@ -1,9 +1,3 @@
-/**
- * Root layout — installs the provider stack (Theme → Auth → Sync), keeps the
- * splash screen up until auth has hydrated, and declares the navigation Stack.
- * All screens are headerless (each screen renders its own glass header via the
- * Screen scaffold).
- */
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -12,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ThemeProvider, useTheme } from '@/lib/theme/ThemeProvider';
+import { LanguageProvider } from '@/lib/i18n/LanguageProvider';
 import { AuthProvider, useAuth } from '@/lib/auth/AuthProvider';
 import { SyncProvider } from '@/lib/sync/SyncProvider';
 
@@ -38,6 +33,7 @@ function RootNavigator() {
         <Stack.Screen name="cart/[id]" options={{ presentation: 'card' }} />
         <Stack.Screen name="returns/new" options={{ presentation: 'card' }} />
         <Stack.Screen name="labels" options={{ presentation: 'card' }} />
+        <Stack.Screen name="outbox" options={{ presentation: 'card' }} />
         <Stack.Screen name="settings" options={{ presentation: 'card' }} />
       </Stack>
     </>
@@ -49,11 +45,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <SyncProvider>
-              <RootNavigator />
-            </SyncProvider>
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <SyncProvider>
+                <RootNavigator />
+              </SyncProvider>
+            </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

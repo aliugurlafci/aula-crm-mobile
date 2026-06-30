@@ -86,8 +86,11 @@ export const DarkPalette: Palette = {
   danger: '#f04444',
   info: '#3b82f6',
   ring: '#fb4b2a',
-  glassBg: 'rgba(22,27,38,0.55)',
-  glassBgStrong: 'rgba(18,22,31,0.85)',
+  // Dark-mode glass fills are kept fairly opaque (and tuned to the `surface2`
+  // tone the search field uses) so the bright aurora blobs behind the blur don't
+  // bleed through and wash cards out — a low alpha here reads as eye-straining.
+  glassBg: 'rgba(28,34,47,0.9)',
+  glassBgStrong: 'rgba(20,25,35,0.95)',
   glassBorder: 'rgba(255,255,255,0.1)',
   glassHighlight: 'rgba(255,255,255,0.08)',
   aurora1: 'rgba(251,75,42,0.18)',

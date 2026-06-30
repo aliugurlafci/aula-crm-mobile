@@ -1,10 +1,13 @@
 /**
- * Barcode/QR SVG generation via bwip-js (pure JS, DOM-free `toSVG` — the
- * `react-native` package export resolves to a Metro-safe build). We render
- * WITHOUT the built-in human-readable text (includetext:false) to avoid runtime
- * font loading; callers print the caption with their own text.
+ * Barcode/QR SVG generation via bwip-js (pure JS, DOM-free `toSVG`). We import
+ * the `generic` build rather than the bare package: the default `react-native`
+ * export pulls in `react-zlib-js` at module load (for PNG encoding we never use)
+ * and that polyfill crashes on init under Hermes. The generic build depends only
+ * on bwip-js's own encoders, so it loads cleanly and still provides `toSVG`. We
+ * render WITHOUT the built-in human-readable text (includetext:false) to avoid
+ * runtime font loading; callers print the caption with their own text.
  */
-import bwipjs from 'bwip-js';
+import bwipjs from 'bwip-js/generic';
 
 import type { BarcodeType } from './check-digit';
 

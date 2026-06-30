@@ -10,12 +10,14 @@ import * as Haptics from 'expo-haptics';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useTheme } from '@/lib/theme/ThemeProvider';
+import { useI18n } from '@/lib/i18n/LanguageProvider';
+import type { TKey } from '@/lib/i18n/translations';
 import { Radius, Spacing } from '@/lib/theme/tokens';
 import { Glass } from '@/components/ui/Glass';
 import { Text } from '@/components/ui/Text';
 
 interface TabMeta {
-  label: string;
+  labelKey: TKey;
   icon: keyof typeof Ionicons.glyphMap;
   iconActive: keyof typeof Ionicons.glyphMap;
   /** Show only when the session can perform this action (undefined = always). */
@@ -23,17 +25,33 @@ interface TabMeta {
 }
 
 const TABS: Record<string, TabMeta> = {
-  home: { label: 'Home', icon: 'grid-outline', iconActive: 'grid' },
-  pos: { label: 'Sell', icon: 'cart-outline', iconActive: 'cart', allow: (can) => can('pos:checkout') },
-  cart: { label: 'Carts', icon: 'bookmarks-outline', iconActive: 'bookmarks', allow: (can) => can('cart:read') || can('cart:create') },
-  returns: { label: 'Returns', icon: 'arrow-undo-outline', iconActive: 'arrow-undo', allow: (can) => can('salesReturn:read') },
+  home: { labelKey: 'tab.home', icon: 'grid-outline', iconActive: 'grid' },
+  pos: { labelKey: 'tab.pos', icon: 'cart-outline', iconActive: 'cart', allow: (can) => can('pos:checkout') },
+  cart: { labelKey: 'tab.cart', icon: 'bookmarks-outline', iconActive: 'bookmarks', allow: (can) => can('cart:read') || can('cart:create') },
+  returns: { labelKey: 'tab.returns', icon: 'arrow-undo-outline', iconActive: 'arrow-undo', allow: (can) => can('salesReturn:read') },
   stock: {
-    label: 'Stock',
+    labelKey: 'tab.stock',
     icon: 'cube-outline',
     iconActive: 'cube',
     allow: (can) => can('product:read') || can('warehouse:read') || can('stockMovement:read'),
   },
 };
+
+/**
+ * Intrinsic height of the floating glass bar (icon + caption + its own padding),
+ * excluding the safe-area inset the wrapper adds below it.
+ */
+export const TAB_BAR_HEIGHT = 72;
+
+/**
+ * Vertical space the floating tab bar occupies from the screen's bottom edge
+ * (bar height + safe-area inset). Tab screens reserve this much bottom padding so
+ * content and floating action bars are never hidden behind the bar.
+ */
+export function useTabBarHeight(): number {
+  const insets = useSafeAreaInsets();
+  return TAB_BAR_HEIGHT + (insets.bottom || Spacing.md);
+}
 
 /** Minimal shape of the props expo-router's Tabs passes to a custom tabBar. */
 interface TabBarProps {
@@ -46,6 +64,7 @@ interface TabBarProps {
 
 export function GlassTabBar({ state, navigation }: TabBarProps) {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const { can } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -76,7 +95,7 @@ export function GlassTabBar({ state, navigation }: TabBarProps) {
                 <Ionicons name={focused ? meta.iconActive : meta.icon} size={22} color={color} />
               </View>
               <Text variant="caption" style={{ color, fontWeight: focused ? '700' : '500' }}>
-                {meta.label}
+                {t(meta.labelKey)}
               </Text>
             </Pressable>
           );

@@ -13,14 +13,19 @@ import { returns } from '@/lib/api/endpoints';
 import { ApiRequestError } from '@/lib/api/client';
 import { money, relativeTime, uid } from '@/lib/format';
 import type { EntityRecord } from '@/lib/types';
+import { useI18n } from '@/lib/i18n/LanguageProvider';
+import { statusKey } from '@/lib/i18n/translations';
 import { Spacing } from '@/lib/theme/tokens';
 import { Screen } from '@/components/Screen';
+import { useTabBarHeight } from '@/components/GlassTabBar';
 import { Card, Text, Badge, EmptyState, Button, Banner, IconButton } from '@/components/ui';
 
 export default function ReturnsScreen() {
   const router = useRouter();
   const { can } = useAuth();
   const { online, submit } = useSync();
+  const { t, lang } = useI18n();
+  const tabBarSpace = useTabBarHeight();
   const [items, setItems] = useState<EntityRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,11 +37,11 @@ export default function ReturnsScreen() {
       const page = await returns.list();
       setItems(page.items ?? []);
     } catch (err) {
-      setError(err instanceof ApiRequestError && err.isNetwork ? 'Offline — connect to load returns.' : 'Could not load returns.');
+      setError(err instanceof ApiRequestError && err.isNetwork ? t('returns.errorOffline') : t('returns.errorGeneric'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -48,10 +53,10 @@ export default function ReturnsScreen() {
   const canPost = can('salesReturn:post');
 
   const post = (id: string) => {
-    Alert.alert('Restock & post', 'Post this return and restock the goods?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('returns.restockPostTitle'), t('returns.restockPostMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Post',
+        text: t('returns.post'),
         onPress: async () => {
           await submit('return.post', { id }, uid('rpost_'));
           setTimeout(load, 600);
@@ -62,47 +67,48 @@ export default function ReturnsScreen() {
 
   return (
     <Screen
-      title="Returns"
-      subtitle="Restock returned goods"
+      title={t('returns.title')}
+      subtitle={t('returns.subtitle')}
       right={canCreate ? <IconButton icon="add" tint="primary" onPress={() => router.push('/returns/new')} /> : undefined}
     >
-      {!online ? <Banner tone="warning" message="Listing returns needs a connection. New returns queue offline." /> : null}
+      {!online ? <Banner tone="warning" message={t('returns.offlineBanner')} /> : null}
       {error && online ? <Banner tone="danger" message={error} /> : null}
 
       <FlatList
         style={{ flex: 1, marginTop: Spacing.sm }}
-        contentContainerStyle={{ paddingBottom: 120, gap: Spacing.sm }}
+        contentContainerStyle={{ paddingBottom: tabBarSpace + Spacing.md, gap: Spacing.sm }}
         data={items}
         keyExtractor={(r) => String(r.id)}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={
           <EmptyState
             icon="arrow-undo-outline"
-            title="No returns"
-            hint={canCreate ? 'Tap + to record a customer return.' : 'No returns recorded.'}
+            title={t('returns.empty')}
+            hint={canCreate ? t('returns.emptyHintCreate') : t('returns.emptyHint')}
           />
         }
         renderItem={({ item }) => {
           const status = String(item.status ?? 'draft');
+          const sKey = statusKey(status);
           return (
             <Card padded={false}>
               <View style={styles.row}>
                 <View style={{ flex: 1 }}>
                   <Text variant="body" weight="bold">
-                    {String(item.number ?? 'Return')}
+                    {String(item.number ?? t('returns.return'))}
                   </Text>
                   <Text variant="caption" tone="muted">
-                    {item.createdAt ? relativeTime(String(item.createdAt)) : ''}
+                    {item.createdAt ? relativeTime(String(item.createdAt), lang) : ''}
                   </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: 4 }}>
                   <Text variant="subtitle" weight="bold">
                     {money(Number(item.total ?? 0), String(item.currencyCode ?? 'USD'))}
                   </Text>
-                  <Badge tone={status === 'posted' ? 'success' : status === 'void' ? 'danger' : 'warning'} label={status} />
+                  <Badge tone={status === 'posted' ? 'success' : status === 'void' ? 'danger' : 'warning'} label={sKey ? t(sKey) : status} />
                 </View>
                 {status === 'draft' && canPost ? (
-                  <Button title="Restock" variant="outline" size="sm" icon="cube" onPress={() => post(String(item.id))} />
+                  <Button title={t('returns.restock')} variant="outline" size="sm" icon="cube" onPress={() => post(String(item.id))} />
                 ) : null}
               </View>
             </Card>

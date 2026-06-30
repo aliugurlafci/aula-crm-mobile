@@ -1,9 +1,3 @@
-/**
- * Return composer — scan/add the returned items, choose the warehouse to restock
- * into and the customer, add a reason, then create the return. Creation is queued
- * to the outbox (offline-safe); posting/restocking happens from the Returns list
- * once it has synced.
- */
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';

@@ -19,9 +19,12 @@ import type { PosCheckoutBody } from '@/lib/api/endpoints';
 import { money, uid } from '@/lib/format';
 import type { Payment, PosSession, Product } from '@/lib/types';
 import { useTheme } from '@/lib/theme/ThemeProvider';
+import { useI18n } from '@/lib/i18n/LanguageProvider';
+import type { TKey } from '@/lib/i18n/translations';
 import { Radius, Spacing } from '@/lib/theme/tokens';
 import { Screen } from '@/components/Screen';
 import { ScannerSheet } from '@/components/ScannerSheet';
+import { useTabBarHeight } from '@/components/GlassTabBar';
 import { LineItemRow } from '@/components/pos/LineItemRow';
 import { PaymentSheet } from '@/components/pos/PaymentSheet';
 import { Button, Card, Badge, Glass, Input, IconButton, Select, Text, EmptyState } from '@/components/ui';
@@ -30,6 +33,8 @@ const CURRENCY = 'USD';
 
 export default function PosScreen() {
   const { palette } = useTheme();
+  const { t } = useI18n();
+  const tabBarSpace = useTabBarHeight();
   const { can } = useAuth();
   const { submit, online } = useSync();
   const { warehouses, branches, dealers } = useReference();
@@ -96,11 +101,11 @@ export default function PosScreen() {
       if (product) await addProduct(product);
       else
         Alert.alert(
-          'Not found',
-          offline ? `No cached product for "${code}". Connect to look it up.` : `No product matches "${code}".`,
+          t('pos.notFoundTitle'),
+          offline ? t('pos.notFoundOffline', { code }) : t('pos.notFoundOnline', { code }),
         );
     },
-    [addProduct],
+    [addProduct, t],
   );
 
   const completeSale = async (payment: Payment, change: number) => {
@@ -127,24 +132,24 @@ export default function PosScreen() {
     cart.clear();
     setStockWarn({});
     void loadSession();
+    const method = t(`payment.${payment.method}` as TKey);
+    const changePart = change > 0 ? t('pos.saleChange', { amount: money(change, CURRENCY) }) : '';
     Alert.alert(
-      'Sale recorded',
-      `${money(total, CURRENCY)} · ${payment.method}${change > 0 ? ` · change ${money(change, CURRENCY)}` : ''}\n${
-        online ? 'Posting to the server…' : 'Queued — will post when back online.'
-      }`,
+      t('pos.saleRecordedTitle'),
+      `${money(total, CURRENCY)} · ${method}${changePart}\n${online ? t('pos.posting') : t('pos.queuedPost')}`,
     );
   };
 
   const onShift = () => {
     if (!online) {
-      Alert.alert('Offline', 'Shifts can only be opened or closed while online.');
+      Alert.alert(t('pos.shiftOfflineTitle'), t('pos.shiftOfflineMsg'));
       return;
     }
     if (session) {
-      Alert.alert('Close shift', `Close shift ${session.number ?? ''}?`, [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert(t('pos.closeShiftTitle'), t('pos.closeShiftMsg', { number: session.number ?? '' }), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Close',
+          text: t('pos.close'),
           onPress: async () => {
             await pos.closeSession(session.id, session.expectedCash ?? 0).catch(() => {});
             void loadSession();
@@ -152,10 +157,10 @@ export default function PosScreen() {
         },
       ]);
     } else {
-      Alert.alert('Open shift', 'Start a new POS shift?', [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert(t('pos.openShiftTitle'), t('pos.openShiftMsg'), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Open',
+          text: t('pos.open'),
           onPress: async () => {
             await pos.openSession({ branchId, warehouseId, openingFloat: 0 }).catch(() => {});
             void loadSession();
@@ -167,22 +172,22 @@ export default function PosScreen() {
 
   if (!canCheckout) {
     return (
-      <Screen title="Sell">
-        <EmptyState icon="lock-closed-outline" title="No checkout permission" hint="Your role can't ring up POS sales." />
+      <Screen title={t('pos.title')}>
+        <EmptyState icon="lock-closed-outline" title={t('pos.noPermTitle')} hint={t('pos.noPermHint')} />
       </Screen>
     );
   }
 
   return (
     <Screen
-      title="Sell"
-      subtitle={session ? `Shift ${session.number ?? ''} · ${money(session.salesTotal ?? 0, CURRENCY)}` : 'No open shift'}
+      title={t('pos.title')}
+      subtitle={session ? t('pos.shift', { number: session.number ?? '', total: money(session.salesTotal ?? 0, CURRENCY) }) : t('pos.noShift')}
       right={<IconButton icon="time-outline" onPress={onShift} />}
     >
       <View style={{ gap: Spacing.sm }}>
         <Input
           icon="search"
-          placeholder="Scan or search product…"
+          placeholder={t('pos.searchPlaceholder')}
           value={search}
           onChangeText={setSearch}
           autoCorrect={false}
@@ -220,7 +225,7 @@ export default function PosScreen() {
               value={warehouseId}
               options={warehouses.map((w) => ({ id: w.id, name: w.name }))}
               onSelect={setWarehouseId}
-              placeholder="Warehouse"
+              placeholder={t('pos.warehouse')}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -229,8 +234,8 @@ export default function PosScreen() {
               value={dealerId}
               options={dealers.map((d) => ({ id: d.id, name: d.name }))}
               onSelect={setDealerId}
-              placeholder="Walk-in"
-              noneLabel="Walk-in customer"
+              placeholder={t('pos.walkIn')}
+              noneLabel={t('pos.walkInCustomer')}
               searchable
             />
           </View>
@@ -239,38 +244,38 @@ export default function PosScreen() {
 
       <FlatList
         style={{ flex: 1, marginTop: Spacing.sm }}
-        contentContainerStyle={{ paddingBottom: 220 }}
+        contentContainerStyle={{ paddingBottom: tabBarSpace + 150 }}
         data={cart.lines}
         keyExtractor={(l) => l.key}
         keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={<EmptyState icon="scan-outline" title="Basket is empty" hint="Scan a barcode or search to add items." />}
+        ListEmptyComponent={<EmptyState icon="scan-outline" title={t('pos.basketEmpty')} hint={t('pos.basketEmptyHint')} />}
         renderItem={({ item }) => (
           <LineItemRow
             line={item}
             currency={CURRENCY}
             onQty={(q) => cart.setQty(item.key, q)}
             onRemove={() => cart.remove(item.key)}
-            stockWarning={item.productId && stockWarn[item.productId] ? 'Out of stock' : null}
+            stockWarning={item.productId && stockWarn[item.productId] ? t('pos.outOfStock') : null}
           />
         )}
       />
 
-      <Glass strong radius={Radius.xl} style={styles.checkout}>
+      <Glass strong radius={Radius.xl} style={[styles.checkout, { bottom: tabBarSpace + Spacing.sm }]}>
         <View style={styles.totalsRow}>
           <View>
             <Text variant="caption" tone="muted">
-              {cart.totals.count} item{cart.totals.count === 1 ? '' : 's'} · tax {money(cart.totals.tax, CURRENCY)}
+              {t('pos.itemsTax', { count: cart.totals.count, tax: money(cart.totals.tax, CURRENCY) })}
             </Text>
             <Text variant="title" weight="heavy">
               {money(total, CURRENCY)}
             </Text>
           </View>
-          {!online ? <Badge tone="warning" label="Offline" /> : null}
+          {!online ? <Badge tone="warning" label={t('common.offline')} /> : null}
         </View>
-        <Button title="Charge" icon="card-outline" size="lg" disabled={!cart.lines.length} onPress={() => setPaying(true)} />
+        <Button title={t('pos.charge')} icon="card-outline" size="lg" disabled={!cart.lines.length} onPress={() => setPaying(true)} />
       </Glass>
 
-      <ScannerSheet visible={scanning} onClose={() => setScanning(false)} onScan={onScan} title="Scan to sell" />
+      <ScannerSheet visible={scanning} onClose={() => setScanning(false)} onScan={onScan} title={t('pos.scanToSell')} />
       <PaymentSheet visible={paying} total={total} currency={CURRENCY} onClose={() => setPaying(false)} onConfirm={completeSale} />
     </Screen>
   );
@@ -279,6 +284,6 @@ export default function PosScreen() {
 const styles = StyleSheet.create({
   selectors: { flexDirection: 'row', gap: Spacing.sm },
   result: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, padding: Spacing.md, borderBottomWidth: StyleSheet.hairlineWidth },
-  checkout: { position: 'absolute', left: Spacing.lg, right: Spacing.lg, bottom: 96, padding: Spacing.lg, gap: Spacing.md },
+  checkout: { position: 'absolute', left: Spacing.lg, right: Spacing.lg, padding: Spacing.lg, gap: Spacing.md },
   totalsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });

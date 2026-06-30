@@ -5,6 +5,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/lib/theme/ThemeProvider';
+import { useI18n } from '@/lib/i18n/LanguageProvider';
 import { Spacing } from '@/lib/theme/tokens';
 import { lineGross, money } from '@/lib/format';
 import type { SaleLine } from '@/lib/types';
@@ -27,6 +28,7 @@ export function LineItemRow({
   stockWarning?: string | null;
 }) {
   const { palette } = useTheme();
+  const { t } = useI18n();
   return (
     <View style={[styles.row, { borderBottomColor: palette.border }]}>
       <View style={styles.info}>
@@ -36,7 +38,7 @@ export function LineItemRow({
         <View style={styles.meta}>
           <Text variant="caption" tone="muted">
             {money(line.unitPrice, currency)}
-            {line.taxRate ? ` · +${line.taxRate}% tax` : ''}
+            {line.taxRate ? ` · ${t('line.tax', { rate: line.taxRate })}` : ''}
           </Text>
           {stockWarning ? <Badge tone="warning" label={stockWarning} /> : null}
         </View>

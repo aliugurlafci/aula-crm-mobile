@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/lib/theme/ThemeProvider';
+import { useI18n } from '@/lib/i18n/LanguageProvider';
+import type { TKey } from '@/lib/i18n/translations';
 import { Radius, Spacing } from '@/lib/theme/tokens';
 import { money, round2 } from '@/lib/format';
 import type { Payment, PaymentMethod } from '@/lib/types';
@@ -15,10 +17,10 @@ import { Numpad } from '@/components/ui/Numpad';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 
-const METHODS: { key: PaymentMethod; label: string }[] = [
-  { key: 'cash', label: 'Cash' },
-  { key: 'card', label: 'Card' },
-  { key: 'other', label: 'Other' },
+const METHODS: { key: PaymentMethod; labelKey: TKey }[] = [
+  { key: 'cash', labelKey: 'payment.cash' },
+  { key: 'card', labelKey: 'payment.card' },
+  { key: 'other', labelKey: 'payment.other' },
 ];
 
 export function PaymentSheet({
@@ -37,6 +39,7 @@ export function PaymentSheet({
   onConfirm: (payment: Payment, change: number) => void;
 }) {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [tendered, setTendered] = useState('');
 
@@ -58,7 +61,7 @@ export function PaymentSheet({
   };
 
   return (
-    <Sheet visible={visible} onClose={onClose} title={`Charge ${money(total, currency)}`}>
+    <Sheet visible={visible} onClose={onClose} title={t('payment.charge', { amount: money(total, currency) })}>
       <View style={styles.methods}>
         {METHODS.map((m) => {
           const active = method === m.key;
@@ -72,7 +75,7 @@ export function PaymentSheet({
               ]}
             >
               <Text variant="label" tone={active ? 'primary' : 'muted'}>
-                {m.label}
+                {t(m.labelKey)}
               </Text>
             </Pressable>
           );
@@ -83,7 +86,7 @@ export function PaymentSheet({
         <>
           <View style={[styles.tenderRow, { borderColor: palette.border }]}>
             <Text variant="body" tone="muted">
-              Tendered
+              {t('payment.tendered')}
             </Text>
             <Text variant="title" weight="heavy">
               {money(tenderedNum, currency)}
@@ -103,20 +106,20 @@ export function PaymentSheet({
           <Numpad value={tendered} onChange={setTendered} />
           <View style={styles.changeRow}>
             <Text variant="subtitle" tone="muted">
-              Change
+              {t('payment.change')}
             </Text>
             <Text variant="title" weight="heavy" tone={shortfall ? 'danger' : 'success'}>
-              {shortfall ? 'Short' : money(change, currency)}
+              {shortfall ? t('payment.short') : money(change, currency)}
             </Text>
           </View>
         </>
       ) : (
         <Text variant="body" tone="muted">
-          {method === 'card' ? 'Card payment for the full balance.' : 'Other tender for the full balance.'}
+          {method === 'card' ? t('payment.cardFull') : t('payment.otherFull')}
         </Text>
       )}
 
-      <Button title="Complete sale" icon="checkmark-circle" size="lg" loading={busy} onPress={confirm} />
+      <Button title={t('payment.complete')} icon="checkmark-circle" size="lg" loading={busy} onPress={confirm} />
     </Sheet>
   );
 }

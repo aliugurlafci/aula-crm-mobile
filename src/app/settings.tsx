@@ -15,27 +15,38 @@ import { clearLocalData } from '@/lib/db/database';
 import { initials, relativeTime } from '@/lib/format';
 import type { OutboxRow } from '@/lib/types';
 import { useTheme, type ThemeMode } from '@/lib/theme/ThemeProvider';
+import { useI18n } from '@/lib/i18n/LanguageProvider';
+import { LANGUAGES, LANGUAGE_LABELS, statusKey, type TKey } from '@/lib/i18n/translations';
 import { Radius, Spacing } from '@/lib/theme/tokens';
 import { Screen } from '@/components/Screen';
 import { Card, Input, Button, Text, Badge, Banner, IconButton } from '@/components/ui';
 
-const THEME_MODES: { key: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'system', label: 'System', icon: 'phone-portrait-outline' },
-  { key: 'light', label: 'Light', icon: 'sunny-outline' },
-  { key: 'dark', label: 'Dark', icon: 'moon-outline' },
+const THEME_MODES: { key: ThemeMode; labelKey: TKey; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'system', labelKey: 'settings.theme.system', icon: 'phone-portrait-outline' },
+  { key: 'light', labelKey: 'settings.theme.light', icon: 'sunny-outline' },
+  { key: 'dark', labelKey: 'settings.theme.dark', icon: 'moon-outline' },
 ];
 
-const CAPABILITIES: { action: string; label: string }[] = [
-  { action: 'pos:checkout', label: 'Sell (POS)' },
-  { action: 'cart:create', label: 'Carts' },
-  { action: 'salesReturn:create', label: 'Returns' },
-  { action: 'product:read', label: 'Stock & catalogue' },
-  { action: 'labelTemplate:read', label: 'Label printing' },
+const CAPABILITIES: { action: string; labelKey: TKey }[] = [
+  { action: 'pos:checkout', labelKey: 'settings.cap.pos' },
+  { action: 'cart:create', labelKey: 'settings.cap.cart' },
+  { action: 'salesReturn:create', labelKey: 'settings.cap.returns' },
+  { action: 'product:read', labelKey: 'settings.cap.stock' },
+  { action: 'labelTemplate:read', labelKey: 'settings.cap.labels' },
 ];
+
+const QUEUE_KEYS: Record<string, TKey> = {
+  'pos.checkout': 'queue.pos.checkout',
+  'cart.create': 'queue.cart.create',
+  'cart.checkout': 'queue.cart.checkout',
+  'return.create': 'queue.return.create',
+  'return.post': 'queue.return.post',
+};
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { palette, mode, setMode } = useTheme();
+  const { lang, setLang, t } = useI18n();
   const { me, grants, can, logout, offline } = useAuth();
   const { online, counts, sync, syncing, retryFailed, discardFailed, listRecent } = useSync();
 
@@ -52,14 +63,14 @@ export default function SettingsScreen() {
     await setBaseUrl(server);
     setServer(getBaseUrl());
     setEditingServer(false);
-    Alert.alert('Saved', 'Backend URL updated. Sync to refresh data.');
+    Alert.alert(t('settings.savedTitle'), t('settings.savedMessage'));
   };
 
   const confirmLogout = () =>
-    Alert.alert('Sign out', 'Sign out of Aula POS?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('settings.signOut'), t('settings.signOutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Sign out',
+        text: t('settings.signOut'),
         style: 'destructive',
         onPress: async () => {
           await logout();
@@ -69,10 +80,10 @@ export default function SettingsScreen() {
     ]);
 
   const confirmClear = () =>
-    Alert.alert('Clear local data', 'Remove the cached catalogue, stock and synced history? Queued sales are kept.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('settings.clearTitle'), t('settings.clearMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Clear',
+        text: t('settings.clear'),
         style: 'destructive',
         onPress: async () => {
           await clearLocalData();
@@ -83,7 +94,7 @@ export default function SettingsScreen() {
     ]);
 
   return (
-    <Screen title="Settings" back showSync={false}>
+    <Screen title={t('settings.title')} back showSync={false}>
       <ScrollView contentContainerStyle={{ gap: Spacing.md, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         {/* profile */}
         <Card>
@@ -95,7 +106,7 @@ export default function SettingsScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text variant="subtitle" weight="bold">
-                {me?.displayName ?? 'User'}
+                {me?.displayName ?? t('settings.user')}
               </Text>
               <Text variant="caption" tone="muted">
                 {me?.email}
@@ -107,13 +118,13 @@ export default function SettingsScreen() {
               </View>
             </View>
           </View>
-          {offline ? <Banner tone="info" message="Showing your cached profile (offline)." /> : null}
+          {offline ? <Banner tone="info" message={t('settings.offlineProfile')} /> : null}
         </Card>
 
         {/* appearance */}
         <Card style={{ gap: Spacing.sm }}>
           <Text variant="subtitle" weight="bold">
-            Appearance
+            {t('settings.appearance')}
           </Text>
           <View style={styles.segment}>
             {THEME_MODES.map((m) => {
@@ -126,7 +137,30 @@ export default function SettingsScreen() {
                 >
                   <Ionicons name={m.icon} size={18} color={active ? palette.primary : palette.muted} />
                   <Text variant="caption" tone={active ? 'primary' : 'muted'} weight="semibold">
-                    {m.label}
+                    {t(m.labelKey)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+
+        {/* language */}
+        <Card style={{ gap: Spacing.sm }}>
+          <Text variant="subtitle" weight="bold">
+            {t('settings.language')}
+          </Text>
+          <View style={styles.segment}>
+            {LANGUAGES.map((l) => {
+              const active = lang === l;
+              return (
+                <Pressable
+                  key={l}
+                  onPress={() => setLang(l)}
+                  style={[styles.segItem, { borderColor: active ? palette.primary : palette.border, backgroundColor: active ? palette.primary + '18' : 'transparent' }]}
+                >
+                  <Text variant="caption" tone={active ? 'primary' : 'muted'} weight="semibold">
+                    {LANGUAGE_LABELS[l]}
                   </Text>
                 </Pressable>
               );
@@ -138,19 +172,19 @@ export default function SettingsScreen() {
         <Card style={{ gap: Spacing.sm }}>
           <View style={styles.cardHeader}>
             <Text variant="subtitle" weight="bold">
-              Backend
+              {t('settings.backend')}
             </Text>
-            <Badge tone={online ? 'success' : 'warning'} label={online ? 'Online' : 'Offline'} />
+            <Badge tone={online ? 'success' : 'warning'} label={online ? t('common.online') : t('common.offline')} />
           </View>
           {editingServer ? (
             <>
               <Input value={server} onChangeText={setServer} autoCapitalize="none" autoCorrect={false} keyboardType="url" icon="server-outline" />
               <View style={styles.rowBtns}>
                 <View style={{ flex: 1 }}>
-                  <Button title="Save" icon="checkmark" onPress={saveServer} />
+                  <Button title={t('common.save')} icon="checkmark" onPress={saveServer} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Button title="Cancel" variant="ghost" onPress={() => setEditingServer(false)} />
+                  <Button title={t('common.cancel')} variant="ghost" onPress={() => setEditingServer(false)} />
                 </View>
               </View>
             </>
@@ -168,30 +202,30 @@ export default function SettingsScreen() {
         <Card style={{ gap: Spacing.sm }}>
           <View style={styles.cardHeader}>
             <Text variant="subtitle" weight="bold">
-              Sync queue
+              {t('settings.syncQueue')}
             </Text>
-            <Button title="Sync now" variant="ghost" size="sm" icon="sync" loading={syncing} onPress={() => sync('manual')} />
+            <Button title={t('settings.syncNow')} variant="ghost" size="sm" icon="sync" loading={syncing} onPress={() => sync('manual')} />
           </View>
           <View style={styles.counts}>
-            <Count label="Queued" value={counts.pending} tone="info" />
-            <Count label="Failed" value={counts.failed} tone="danger" />
-            <Count label="Synced" value={counts.done} tone="success" />
+            <Count label={t('settings.queued')} value={counts.pending} tone="info" />
+            <Count label={t('settings.failed')} value={counts.failed} tone="danger" />
+            <Count label={t('settings.synced')} value={counts.done} tone="success" />
           </View>
           {recent.length === 0 ? (
             <Text variant="caption" tone="muted">
-              No sales recorded yet.
+              {t('settings.noSales')}
             </Text>
           ) : (
             recent.map((row) => (
               <View key={row.id} style={[styles.queueRow, { borderTopColor: palette.border }]}>
                 <View style={{ flex: 1 }}>
-                  <Text variant="label">{labelForKind(row.kind)}</Text>
+                  <Text variant="label">{QUEUE_KEYS[row.kind] ? t(QUEUE_KEYS[row.kind]) : row.kind}</Text>
                   <Text variant="caption" tone="muted">
-                    {relativeTime(row.createdAt)}
+                    {relativeTime(row.createdAt, lang)}
                     {row.lastError ? ` · ${row.lastError}` : ''}
                   </Text>
                 </View>
-                <Badge tone={statusTone(row.status)} label={row.status} />
+                <Badge tone={statusTone(row.status)} label={statusKey(row.status) ? t(statusKey(row.status)!) : row.status} />
                 {row.status === 'failed' ? (
                   <>
                     <IconButton icon="refresh" size={32} onPress={() => retryFailed(row.id)} />
@@ -206,24 +240,24 @@ export default function SettingsScreen() {
         {/* access overview */}
         <Card style={{ gap: Spacing.sm }}>
           <Text variant="subtitle" weight="bold">
-            Your access
+            {t('settings.access')}
           </Text>
           <Text variant="caption" tone="muted">
-            {grants.length} grant{grants.length === 1 ? '' : 's'} · {me?.screens?.length ?? 0} screens
+            {t('settings.accessSummary', { grants: grants.length, screens: me?.screens?.length ?? 0 })}
           </Text>
           {CAPABILITIES.map((c) => {
             const ok = can(c.action);
             return (
               <View key={c.action} style={styles.capRow}>
-                <Text variant="body">{c.label}</Text>
+                <Text variant="body">{t(c.labelKey)}</Text>
                 <Ionicons name={ok ? 'checkmark-circle' : 'close-circle'} size={20} color={ok ? palette.success : palette.muted2} />
               </View>
             );
           })}
         </Card>
 
-        <Button title="Clear local data" variant="outline" icon="trash-bin-outline" onPress={confirmClear} />
-        <Button title="Sign out" variant="danger" icon="log-out-outline" onPress={confirmLogout} />
+        <Button title={t('settings.clearData')} variant="outline" icon="trash-bin-outline" onPress={confirmClear} />
+        <Button title={t('settings.signOut')} variant="danger" icon="log-out-outline" onPress={confirmLogout} />
       </ScrollView>
     </Screen>
   );
@@ -242,23 +276,6 @@ function Count({ label, value, tone }: { label: string; value: number; tone: 'in
       </Text>
     </View>
   );
-}
-
-function labelForKind(kind: string): string {
-  switch (kind) {
-    case 'pos.checkout':
-      return 'POS sale';
-    case 'cart.create':
-      return 'Cart saved';
-    case 'cart.checkout':
-      return 'Cart checkout';
-    case 'return.create':
-      return 'Return created';
-    case 'return.post':
-      return 'Return restocked';
-    default:
-      return kind;
-  }
 }
 
 function statusTone(status: string): 'info' | 'danger' | 'success' | 'warning' {

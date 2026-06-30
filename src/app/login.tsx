@@ -14,6 +14,8 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { useSync } from '@/lib/sync/SyncProvider';
 import { getBaseUrl, setBaseUrl } from '@/lib/api/client';
 import { useTheme } from '@/lib/theme/ThemeProvider';
+import { useI18n } from '@/lib/i18n/LanguageProvider';
+import type { TKey } from '@/lib/i18n/translations';
 import { Spacing } from '@/lib/theme/tokens';
 import { ScreenBackground } from '@/components/ui/ScreenBackground';
 import { Card } from '@/components/ui/Card';
@@ -22,16 +24,17 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 
-const PERSONAS: { actor: string; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { actor: 'admin', label: 'Admin', icon: 'shield-checkmark' },
-  { actor: 'manager', label: 'Manager', icon: 'briefcase' },
-  { actor: 'rep', label: 'Sales Rep', icon: 'person' },
-  { actor: 'accountant', label: 'Accountant', icon: 'calculator' },
+const PERSONAS: { actor: string; labelKey: TKey; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { actor: 'admin', labelKey: 'login.persona.admin', icon: 'shield-checkmark' },
+  { actor: 'manager', labelKey: 'login.persona.manager', icon: 'briefcase' },
+  { actor: 'rep', labelKey: 'login.persona.rep', icon: 'person' },
+  { actor: 'accountant', labelKey: 'login.persona.accountant', icon: 'calculator' },
 ];
 
 export default function LoginScreen() {
   const router = useRouter();
   const { palette } = useTheme();
+  const { t } = useI18n();
   const { online } = useSync();
   const { loginWithCredentials, loginPersona } = useAuth();
 
@@ -57,7 +60,7 @@ export default function LoginScreen() {
       return;
     }
     if (!res.ok) {
-      setError(res.error ?? 'Login failed');
+      setError(res.error ?? t('login.failedGeneric'));
       return;
     }
     goHome();
@@ -69,7 +72,7 @@ export default function LoginScreen() {
     const res = await loginPersona(actor);
     setLoading(null);
     if (!res.ok) {
-      setError(res.error ?? 'Login failed');
+      setError(res.error ?? t('login.failedGeneric'));
       return;
     }
     goHome();
@@ -94,16 +97,16 @@ export default function LoginScreen() {
               Aula POS
             </Text>
             <Text variant="body" tone="muted" center>
-              Sell, scan and manage stock — online or off.
+              {t('login.tagline')}
             </Text>
           </View>
 
-          {!online ? <Banner tone="warning" message="You're offline. Sign in once online to start a session." /> : null}
-          {error ? <Banner tone="danger" title="Sign-in failed" message={error} /> : null}
+          {!online ? <Banner tone="warning" message={t('login.offlineBanner')} /> : null}
+          {error ? <Banner tone="danger" title={t('login.failedTitle')} message={error} /> : null}
 
           <Card style={{ gap: Spacing.md }}>
             <Input
-              label="Email"
+              label={t('login.email')}
               icon="mail-outline"
               placeholder="you@company.com"
               autoCapitalize="none"
@@ -113,7 +116,7 @@ export default function LoginScreen() {
               onChangeText={setEmail}
             />
             <Input
-              label="Password"
+              label={t('login.password')}
               icon="lock-closed-outline"
               placeholder="••••••••"
               secureTextEntry
@@ -123,7 +126,7 @@ export default function LoginScreen() {
             />
             {twoFA ? (
               <Input
-                label="Authenticator code"
+                label={t('login.code')}
                 icon="keypad-outline"
                 placeholder="123456"
                 keyboardType="number-pad"
@@ -133,7 +136,7 @@ export default function LoginScreen() {
               />
             ) : null}
             <Button
-              title={twoFA ? 'Verify & sign in' : 'Sign in'}
+              title={twoFA ? t('login.verifySignIn') : t('login.signIn')}
               icon="log-in-outline"
               size="lg"
               loading={loading === 'credentials'}
@@ -144,7 +147,7 @@ export default function LoginScreen() {
           <View style={styles.divider}>
             <View style={[styles.line, { backgroundColor: palette.border }]} />
             <Text variant="caption" tone="muted2">
-              or try a demo persona
+              {t('login.demoDivider')}
             </Text>
             <View style={[styles.line, { backgroundColor: palette.border }]} />
           </View>
@@ -153,7 +156,7 @@ export default function LoginScreen() {
             {PERSONAS.map((p) => (
               <View key={p.actor} style={styles.personaCell}>
                 <Button
-                  title={p.label}
+                  title={t(p.labelKey)}
                   icon={p.icon}
                   variant="outline"
                   loading={loading === p.actor}
@@ -167,7 +170,7 @@ export default function LoginScreen() {
           {showServer ? (
             <Card style={{ gap: Spacing.sm }}>
               <Input
-                label="Backend server URL"
+                label={t('login.serverUrl')}
                 icon="server-outline"
                 placeholder="http://192.168.1.20:4000"
                 autoCapitalize="none"
@@ -178,15 +181,15 @@ export default function LoginScreen() {
               />
               <View style={styles.serverRow}>
                 <View style={{ flex: 1 }}>
-                  <Button title="Save" icon="checkmark" onPress={saveServer} />
+                  <Button title={t('common.save')} icon="checkmark" onPress={saveServer} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Button title="Cancel" variant="ghost" onPress={() => setShowServer(false)} />
+                  <Button title={t('common.cancel')} variant="ghost" onPress={() => setShowServer(false)} />
                 </View>
               </View>
             </Card>
           ) : (
-            <Button title={`Server: ${getBaseUrl()}`} variant="ghost" icon="settings-outline" onPress={() => setShowServer(true)} />
+            <Button title={t('login.server', { url: getBaseUrl() })} variant="ghost" icon="settings-outline" onPress={() => setShowServer(true)} />
           )}
         </ScrollView>
       </KeyboardAvoidingView>

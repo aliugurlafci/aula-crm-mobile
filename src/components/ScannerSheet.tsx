@@ -12,6 +12,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/lib/theme/ThemeProvider';
+import { useI18n } from '@/lib/i18n/LanguageProvider';
 import { Radius, Spacing } from '@/lib/theme/tokens';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -37,8 +38,8 @@ export function ScannerSheet({
   visible,
   onClose,
   onScan,
-  title = 'Scan barcode',
-  hint = 'Align the barcode within the frame',
+  title,
+  hint,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -47,7 +48,10 @@ export function ScannerSheet({
   hint?: string;
 }) {
   const { palette } = useTheme();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
+  const titleText = title ?? t('scanner.title');
+  const hintText = hint ?? t('scanner.hint');
   const [permission, requestPermission] = useCameraPermissions();
   const [torch, setTorch] = useState(false);
   const [manual, setManual] = useState('');
@@ -92,9 +96,9 @@ export function ScannerSheet({
           <View style={[StyleSheet.absoluteFill, styles.permission]}>
             <Ionicons name="camera-outline" size={56} color="#fff" />
             <Text variant="subtitle" style={{ color: '#fff' }} center>
-              Camera access is needed to scan products
+              {t('scanner.cameraNeeded')}
             </Text>
-            <Button title="Grant camera access" icon="camera" onPress={requestPermission} />
+            <Button title={t('scanner.grant')} icon="camera" onPress={requestPermission} />
           </View>
         )}
 
@@ -103,7 +107,7 @@ export function ScannerSheet({
           <View style={styles.topBar}>
             <IconButton icon="close" tint="transparent" color="#fff" onPress={onClose} />
             <Text variant="subtitle" weight="bold" style={{ color: '#fff' }}>
-              {title}
+              {titleText}
             </Text>
             <IconButton icon={torch ? 'flashlight' : 'flashlight-outline'} tint="transparent" color="#fff" onPress={() => setTorch((t) => !t)} />
           </View>
@@ -112,7 +116,7 @@ export function ScannerSheet({
             <View style={styles.frameWrap} pointerEvents="none">
               <View style={[styles.frame, { borderColor: palette.primary }]} />
               <Text variant="caption" style={{ color: '#fff', marginTop: Spacing.md }} center>
-                {hint}
+                {hintText}
               </Text>
             </View>
           ) : (
@@ -122,7 +126,7 @@ export function ScannerSheet({
           <View style={styles.manual}>
             <Input
               icon="keypad-outline"
-              placeholder="Enter code manually"
+              placeholder={t('scanner.manual')}
               value={manual}
               onChangeText={setManual}
               autoCapitalize="characters"

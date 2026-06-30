@@ -45,9 +45,17 @@ export function Glass({ strong, radius = Radius.lg, intensity, bordered = true, 
   };
 
   if (LIQUID_GLASS) {
+    // `colorScheme` asks the native glass to follow our in-app theme toggle
+    // instead of the OS appearance (default 'auto'). We ALSO overlay the palette
+    // glass fill (same as the BlurView path) so surfaces visibly adopt the
+    // selected light/dark theme even on native builds that don't yet honour
+    // `colorScheme`. The overlay is absolute-fill so it never affects layout, and
+    // children render directly so the caller's layout style (e.g. the tab bar's
+    // flexDirection:'row') applies.
     return (
-      <GlassView glassEffectStyle="regular" style={[frame, style]} {...rest}>
-        <View style={{ backgroundColor: strong ? palette.surface2 : 'transparent', flex: 0 }}>{children}</View>
+      <GlassView glassEffectStyle="regular" colorScheme={scheme} style={[frame, style]} {...rest}>
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: strong ? palette.glassBgStrong : palette.glassBg }]} />
+        {children}
       </GlassView>
     );
   }
@@ -56,7 +64,7 @@ export function Glass({ strong, radius = Radius.lg, intensity, bordered = true, 
     <BlurView
       intensity={intensity ?? GlassBlur[scheme]}
       tint={palette.blurTint}
-      blurMethod="dimezisBlurViewSdk31Plus"
+      experimentalBlurMethod="dimezisBlurView"
       style={[frame, style]}
       {...rest}
     >
