@@ -10,7 +10,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useSync } from '@/lib/sync/SyncProvider';
-import { getBaseUrl, setBaseUrl } from '@/lib/api/client';
+import { useAppDispatch } from '@/lib/store';
+import { changeBackendBaseUrl } from '@/lib/store/settingsSlice';
+import { useScreenAccess } from '@/lib/access';
+import { getBaseUrl } from '@/lib/api/client';
 import { clearLocalData } from '@/lib/db/database';
 import { initials, relativeTime } from '@/lib/format';
 import type { OutboxRow } from '@/lib/types';
@@ -49,6 +52,8 @@ export default function SettingsScreen() {
   const { lang, setLang, t } = useI18n();
   const { me, grants, can, logout, offline } = useAuth();
   const { online, counts, sync, syncing, retryFailed, discardFailed, listRecent } = useSync();
+  const { screens: mobileScreens, refresh: refreshConfig } = useScreenAccess();
+  const dispatch = useAppDispatch();
 
   const [server, setServer] = useState(getBaseUrl());
   const [editingServer, setEditingServer] = useState(false);
@@ -60,7 +65,7 @@ export default function SettingsScreen() {
   }, [loadRecent, counts]);
 
   const saveServer = async () => {
-    await setBaseUrl(server);
+    await dispatch(changeBackendBaseUrl(server)).unwrap();
     setServer(getBaseUrl());
     setEditingServer(false);
     Alert.alert(t('settings.savedTitle'), t('settings.savedMessage'));
@@ -256,6 +261,24 @@ export default function SettingsScreen() {
           })}
         </Card>
 
+        {/* mobile screens — the admin-curated set this device may show */}
+        <Card style={{ gap: Spacing.sm }}>
+          <View style={styles.cardHeader}>
+            <Text variant="subtitle" weight="bold">
+              {t('settings.mobileScreens')}
+            </Text>
+            <Button title={t('settings.refresh')} variant="ghost" size="sm" icon="sync" onPress={() => void refreshConfig()} />
+          </View>
+          <Text variant="caption" tone="muted">
+            {t('settings.mobileScreensHint', { n: mobileScreens?.length ?? 0 })}
+          </Text>
+          <View style={styles.chips}>
+            {(mobileScreens ?? []).map((key) => (
+              <Badge key={key} tone="primary" label={key} />
+            ))}
+          </View>
+        </Card>
+
         <Button title={t('settings.clearData')} variant="outline" icon="trash-bin-outline" onPress={confirmClear} />
         <Button title={t('settings.signOut')} variant="danger" icon="log-out-outline" onPress={confirmLogout} />
       </ScrollView>
@@ -298,4 +321,5 @@ const styles = StyleSheet.create({
   count: { flex: 1, alignItems: 'center', paddingVertical: Spacing.md, borderRadius: Radius.md, borderWidth: StyleSheet.hairlineWidth, gap: 2 },
   queueRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: StyleSheet.hairlineWidth },
   capRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
 });

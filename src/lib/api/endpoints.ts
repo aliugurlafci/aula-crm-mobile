@@ -203,6 +203,30 @@ export const inventory = {
 };
 
 // ---- dashboard stats ------------------------------------------------------
+export interface StatsResponse {
+  counts?: { account?: number; deal?: number; task?: number };
+  pipelineByStage?: Record<string, { count: number; value: number }>;
+  openPipeline?: number;
+  wonValue?: number;
+  cachedAt?: string;
+}
+
 export const stats = {
-  get: () => apiFetch<Record<string, unknown>>('/stats'),
+  get: () => apiFetch<StatsResponse>('/stats'),
+};
+
+// ---- activity feed --------------------------------------------------------
+export interface ActivityEntry {
+  entity?: string;
+  action?: string;
+  actorId?: string;
+  actorName?: string;
+  at?: string;
+  recordId?: string;
+  summary?: string;
+  [key: string]: unknown;
+}
+
+export const activity = {
+  list: (limit = 20) => apiFetch<{ entries: ActivityEntry[] }>(`/activity?limit=${limit}`),
 };

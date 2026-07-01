@@ -19,6 +19,7 @@ import { Screen } from '@/components/Screen';
 import { ScannerSheet } from '@/components/ScannerSheet';
 import { BarcodeView } from '@/components/BarcodeView';
 import { Card, Input, IconButton, QtyStepper, Text, EmptyState, Button } from '@/components/ui';
+import { ScreenGate } from '@/lib/access';
 
 interface LabelItem {
   key: string;
@@ -28,6 +29,16 @@ interface LabelItem {
 }
 
 export default function LabelsScreen() {
+  // Route-level gate: hidden entirely when the admin disables the Labels screen
+  // for mobile (pairs with the tab-bar hiding for the primary tabs).
+  return (
+    <ScreenGate screen="labels" title="Labels">
+      <LabelsScreenInner />
+    </ScreenGate>
+  );
+}
+
+function LabelsScreenInner() {
   const { palette } = useTheme();
   const [items, setItems] = useState<LabelItem[]>([]);
   const [search, setSearch] = useState('');

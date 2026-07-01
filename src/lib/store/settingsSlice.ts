@@ -7,9 +7,13 @@
  * owned by the API client (SecureStore); this slice mirrors it for the UI.
  */
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import * as SecureStore from 'expo-secure-store';
 import { getBaseUrl, loadBaseUrl, setBaseUrl } from '@/lib/api/client';
 import { auth } from '@/lib/api/endpoints';
-import type { Lang } from '@/lib/i18n/translations';
+import { LANGUAGES, type Lang } from '@/lib/i18n/translations';
+
+const LEGACY_THEME_KEY = 'aula.theme.mode';
+const LEGACY_LANG_KEY = 'aula.language';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -80,4 +84,21 @@ const settingsSlice = createSlice({
 });
 
 export const { setThemeMode, setLanguage, setServerSettings } = settingsSlice.actions;
+
+/** One-time carry-over of the theme/language a user picked before the Redux
+ *  migration (stored in SecureStore). Runs after rehydration; deletes the legacy
+ *  keys so it only takes effect once, then redux-persist owns the values. */
+export const migrateLegacySettings = createAsyncThunk('settings/migrateLegacy', async (_arg, { dispatch }) => {
+  const theme = await SecureStore.getItemAsync(LEGACY_THEME_KEY).catch(() => null);
+  if (theme === 'light' || theme === 'dark' || theme === 'system') {
+    dispatch(setThemeMode(theme));
+    await SecureStore.deleteItemAsync(LEGACY_THEME_KEY).catch(() => {});
+  }
+  const lang = await SecureStore.getItemAsync(LEGACY_LANG_KEY).catch(() => null);
+  if (lang && (LANGUAGES as readonly string[]).includes(lang)) {
+    dispatch(setLanguage(lang as Lang));
+    await SecureStore.deleteItemAsync(LEGACY_LANG_KEY).catch(() => {});
+  }
+});
+
 export default settingsSlice.reducer;

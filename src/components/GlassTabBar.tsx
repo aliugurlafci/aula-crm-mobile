@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useTheme } from '@/lib/theme/ThemeProvider';
 import { useI18n } from '@/lib/i18n/LanguageProvider';
+import { useScreenAccess } from '@/lib/access';
 import type { TKey } from '@/lib/i18n/translations';
 import { Radius, Spacing } from '@/lib/theme/tokens';
 import { Glass } from '@/components/ui/Glass';
@@ -20,21 +21,27 @@ interface TabMeta {
   labelKey: TKey;
   icon: keyof typeof Ionicons.glyphMap;
   iconActive: keyof typeof Ionicons.glyphMap;
+  /** The mobile screen-config key that governs this tab's visibility. */
+  screenKey: string;
   /** Show only when the session can perform this action (undefined = always). */
   allow?: (can: (a: string) => boolean) => boolean;
 }
 
 const TABS: Record<string, TabMeta> = {
-  home: { labelKey: 'tab.home', icon: 'grid-outline', iconActive: 'grid' },
-  pos: { labelKey: 'tab.pos', icon: 'cart-outline', iconActive: 'cart', allow: (can) => can('pos:checkout') },
-  cart: { labelKey: 'tab.cart', icon: 'bookmarks-outline', iconActive: 'bookmarks', allow: (can) => can('cart:read') || can('cart:create') },
-  returns: { labelKey: 'tab.returns', icon: 'arrow-undo-outline', iconActive: 'arrow-undo', allow: (can) => can('salesReturn:read') },
+  home: { labelKey: 'tab.home', icon: 'grid-outline', iconActive: 'grid', screenKey: 'home' },
+  pos: { labelKey: 'tab.pos', icon: 'cart-outline', iconActive: 'cart', screenKey: 'pos', allow: (can) => can('pos:checkout') },
+  cart: { labelKey: 'tab.cart', icon: 'bookmarks-outline', iconActive: 'bookmarks', screenKey: 'cart', allow: (can) => can('cart:read') || can('cart:create') },
+  returns: { labelKey: 'tab.returns', icon: 'arrow-undo-outline', iconActive: 'arrow-undo', screenKey: 'salesReturn', allow: (can) => can('salesReturn:read') },
   stock: {
     labelKey: 'tab.stock',
     icon: 'cube-outline',
     iconActive: 'cube',
+    screenKey: 'stock-levels',
     allow: (can) => can('product:read') || can('warehouse:read') || can('stockMovement:read'),
   },
+  // The "More" hub is always available — it's the gateway to every other screen
+  // the admin has enabled for mobile (each row is itself gated inside the hub).
+  more: { labelKey: 'tab.more', icon: 'ellipsis-horizontal-circle-outline', iconActive: 'ellipsis-horizontal-circle', screenKey: 'more' },
 };
 
 /**
@@ -66,11 +73,15 @@ export function GlassTabBar({ state, navigation }: TabBarProps) {
   const { palette } = useTheme();
   const { t } = useI18n();
   const { can } = useAuth();
+  const { isAllowed } = useScreenAccess();
   const insets = useSafeAreaInsets();
 
   const routes = state.routes.filter((route) => {
     const meta = TABS[route.name];
     if (!meta) return false;
+    // Both gates must pass: the user's backend grants AND the admin's mobile
+    // screen-config (an enabled screen the user isn't permitted to still hides).
+    if (!isAllowed(meta.screenKey)) return false;
     return meta.allow ? meta.allow(can) : true;
   });
 

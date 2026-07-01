@@ -14,13 +14,14 @@ import {
   loginPersona as loginPersonaThunk,
   refreshMe as refreshMeThunk,
   logout as logoutThunk,
+  type AuthStatus,
+  type LoginResult,
 } from '@/lib/store/authSlice';
-import { initBackendBaseUrl } from '@/lib/store/settingsSlice';
+import { initBackendBaseUrl, migrateLegacySettings } from '@/lib/store/settingsSlice';
 import { can, canEntity, grantsForRoles, hasScreen } from './permissions';
 import type { Me } from '../types';
 
-export type { AuthStatus, LoginResult } from '@/lib/store/authSlice';
-import type { AuthStatus, LoginResult } from '@/lib/store/authSlice';
+export type { AuthStatus, LoginResult };
 
 export interface AuthValue {
   status: AuthStatus;
@@ -46,6 +47,7 @@ function effectiveGrants(me: Me | null): string[] {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   useEffect(() => {
+    void dispatch(migrateLegacySettings());
     void dispatch(initBackendBaseUrl());
     void dispatch(bootstrapAuth());
   }, [dispatch]);

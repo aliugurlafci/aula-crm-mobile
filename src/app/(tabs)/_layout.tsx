@@ -21,6 +21,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="cart" />
       <Tabs.Screen name="returns" />
       <Tabs.Screen name="stock" />
+      <Tabs.Screen name="more" />
     </Tabs>
   );
 }

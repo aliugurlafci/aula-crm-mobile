@@ -210,6 +210,11 @@ const en = {
   'settings.noSales': 'No sales recorded yet.',
   'settings.access': 'Your access',
   'settings.accessSummary': '{grants} grants · {screens} screens',
+  'settings.mobileScreens': 'Mobile screens',
+  'settings.mobileScreensHint': '{n} screens enabled for mobile by your administrator.',
+  'settings.refresh': 'Refresh',
+  'gate.unavailableTitle': 'Screen unavailable',
+  'gate.unavailableHint': 'Your administrator has not enabled this screen on mobile.',
   'settings.cap.pos': 'Sell (POS)',
   'settings.cap.cart': 'Carts',
   'settings.cap.returns': 'Returns',
@@ -221,6 +226,81 @@ const en = {
   'settings.clear': 'Clear',
   'settings.signOut': 'Sign out',
   'settings.signOutConfirm': 'Sign out of Aula POS?',
+
+  // common (generic screens)
+  'common.retry': 'Retry',
+  'common.loading': 'Loading…',
+
+  // more hub
+  'tab.more': 'More',
+  'more.title': 'More',
+  'more.subtitle': 'All your enabled screens',
+  'more.empty': 'No other screens',
+  'more.emptyHint': 'Your administrator hasn’t enabled more screens for mobile.',
+  'more.offline': 'Offline',
+  'more.loadError': 'Couldn’t load screens',
+
+  // catalog groups
+  'group.main': 'General',
+  'group.dashboards': 'Dashboards',
+  'group.sales': 'Sales',
+  'group.inventory': 'Inventory',
+  'group.purchasing': 'Purchasing',
+  'group.accounting': 'Accounting',
+  'group.finance': 'Finance',
+  'group.crm': 'CRM',
+  'group.comms': 'Communication',
+  'group.people': 'People',
+  'group.admin': 'Administration',
+
+  // extra screen titles
+  'screen.salesDashboard': 'Sales Dashboard',
+  'screen.dealsDashboard': 'Deals Dashboard',
+  'screen.inventoryDashboard': 'Inventory Dashboard',
+  'screen.accountingDashboard': 'Accounting Dashboard',
+  'screen.branchDashboard': 'Branch Dashboard',
+  'screen.executiveDashboard': 'Executive Dashboard',
+  'screen.revenueDashboard': 'Revenue Dashboard',
+  'screen.growthDashboard': 'Growth Dashboard',
+  'screen.pipeline': 'Pipeline',
+  'screen.reports': 'Reports',
+  'screen.finance': 'Finance',
+  'screen.activity': 'Activity',
+  'screen.email': 'Email',
+  'screen.calendar': 'Calendar',
+  'screen.files': 'Files',
+  'screen.todo': 'To Do',
+  'screen.notes': 'Notes',
+  'screen.automation': 'Automation',
+
+  // generic entity list
+  'entity.searchPlaceholder': 'Search…',
+  'entity.count': '{n} records',
+  'entity.empty': 'Nothing here',
+  'entity.emptyHint': 'No records to show.',
+  'entity.offline': 'Offline',
+  'entity.offlineHint': 'Connect to load this screen.',
+  'entity.noPermission': 'No access',
+  'entity.loadError': 'Couldn’t load this screen.',
+
+  // generic entity detail
+  'detail.empty': 'No fields to show.',
+  'detail.notFound': 'Record not found.',
+  'detail.loadError': 'Couldn’t load this record.',
+
+  // generic dashboard host
+  'dash.accounts': 'Accounts',
+  'dash.deals': 'Deals',
+  'dash.openPipeline': 'Open pipeline',
+  'dash.won': 'Won',
+  'dash.byStage': 'Pipeline by stage',
+  'dash.empty': 'No data yet.',
+  'dash.loadError': 'Couldn’t load stats.',
+
+  // activity feed
+  'feed.empty': 'No recent activity.',
+  'feed.event': 'Activity',
+  'feed.system': 'System',
 } as const;
 
 /** Every translatable string key. `tr`/`de` must cover exactly this set. */
@@ -419,6 +499,11 @@ const tr: Record<TKey, string> = {
   'settings.noSales': 'Henüz satış kaydı yok.',
   'settings.access': 'Erişiminiz',
   'settings.accessSummary': '{grants} yetki · {screens} ekran',
+  'settings.mobileScreens': 'Mobil ekranlar',
+  'settings.mobileScreensHint': 'Yöneticiniz mobil için {n} ekran etkinleştirdi.',
+  'settings.refresh': 'Yenile',
+  'gate.unavailableTitle': 'Ekran kullanılamıyor',
+  'gate.unavailableHint': 'Yöneticiniz bu ekranı mobilde etkinleştirmemiş.',
   'settings.cap.pos': 'Satış (POS)',
   'settings.cap.cart': 'Sepetler',
   'settings.cap.returns': 'İadeler',
@@ -430,6 +515,81 @@ const tr: Record<TKey, string> = {
   'settings.clear': 'Temizle',
   'settings.signOut': 'Çıkış yap',
   'settings.signOutConfirm': 'Aula POS oturumunuzu kapatmak istiyor musunuz?',
+
+  // common (generic screens)
+  'common.retry': 'Yeniden dene',
+  'common.loading': 'Yükleniyor…',
+
+  // more hub
+  'tab.more': 'Daha Fazla',
+  'more.title': 'Daha Fazla',
+  'more.subtitle': 'Etkinleştirilen tüm ekranlarınız',
+  'more.empty': 'Başka ekran yok',
+  'more.emptyHint': 'Yöneticiniz mobil için başka ekran etkinleştirmemiş.',
+  'more.offline': 'Çevrimdışı',
+  'more.loadError': 'Ekranlar yüklenemedi',
+
+  // catalog groups
+  'group.main': 'Genel',
+  'group.dashboards': 'Panolar',
+  'group.sales': 'Satış',
+  'group.inventory': 'Envanter',
+  'group.purchasing': 'Satın Alma',
+  'group.accounting': 'Muhasebe',
+  'group.finance': 'Finans',
+  'group.crm': 'CRM',
+  'group.comms': 'İletişim',
+  'group.people': 'İnsanlar',
+  'group.admin': 'Yönetim',
+
+  // extra screen titles
+  'screen.salesDashboard': 'Satış Panosu',
+  'screen.dealsDashboard': 'Fırsat Panosu',
+  'screen.inventoryDashboard': 'Envanter Panosu',
+  'screen.accountingDashboard': 'Muhasebe Panosu',
+  'screen.branchDashboard': 'Şube Panosu',
+  'screen.executiveDashboard': 'Yönetici Panosu',
+  'screen.revenueDashboard': 'Gelir Panosu',
+  'screen.growthDashboard': 'Büyüme Panosu',
+  'screen.pipeline': 'Satış Hattı',
+  'screen.reports': 'Raporlar',
+  'screen.finance': 'Finans',
+  'screen.activity': 'Etkinlik',
+  'screen.email': 'E-posta',
+  'screen.calendar': 'Takvim',
+  'screen.files': 'Dosyalar',
+  'screen.todo': 'Yapılacaklar',
+  'screen.notes': 'Notlar',
+  'screen.automation': 'Otomasyon',
+
+  // generic entity list
+  'entity.searchPlaceholder': 'Ara…',
+  'entity.count': '{n} kayıt',
+  'entity.empty': 'Burada bir şey yok',
+  'entity.emptyHint': 'Gösterilecek kayıt yok.',
+  'entity.offline': 'Çevrimdışı',
+  'entity.offlineHint': 'Bu ekranı yüklemek için bağlanın.',
+  'entity.noPermission': 'Erişim yok',
+  'entity.loadError': 'Bu ekran yüklenemedi.',
+
+  // generic entity detail
+  'detail.empty': 'Gösterilecek alan yok.',
+  'detail.notFound': 'Kayıt bulunamadı.',
+  'detail.loadError': 'Bu kayıt yüklenemedi.',
+
+  // generic dashboard host
+  'dash.accounts': 'Cariler',
+  'dash.deals': 'Fırsatlar',
+  'dash.openPipeline': 'Açık satış hattı',
+  'dash.won': 'Kazanılan',
+  'dash.byStage': 'Aşamaya göre',
+  'dash.empty': 'Henüz veri yok.',
+  'dash.loadError': 'İstatistikler yüklenemedi.',
+
+  // activity feed
+  'feed.empty': 'Son etkinlik yok.',
+  'feed.event': 'Etkinlik',
+  'feed.system': 'Sistem',
 };
 
 const de: Record<TKey, string> = {
@@ -625,6 +785,11 @@ const de: Record<TKey, string> = {
   'settings.noSales': 'Noch keine Verkäufe erfasst.',
   'settings.access': 'Ihre Berechtigungen',
   'settings.accessSummary': '{grants} Berechtigungen · {screens} Bildschirme',
+  'settings.mobileScreens': 'Mobile Bildschirme',
+  'settings.mobileScreensHint': 'Ihr Administrator hat {n} Bildschirme für Mobilgeräte aktiviert.',
+  'settings.refresh': 'Aktualisieren',
+  'gate.unavailableTitle': 'Bildschirm nicht verfügbar',
+  'gate.unavailableHint': 'Ihr Administrator hat diesen Bildschirm auf Mobilgeräten nicht aktiviert.',
   'settings.cap.pos': 'Verkauf (POS)',
   'settings.cap.cart': 'Warenkörbe',
   'settings.cap.returns': 'Retouren',
@@ -636,6 +801,81 @@ const de: Record<TKey, string> = {
   'settings.clear': 'Löschen',
   'settings.signOut': 'Abmelden',
   'settings.signOutConfirm': 'Von Aula POS abmelden?',
+
+  // common (generic screens)
+  'common.retry': 'Wiederholen',
+  'common.loading': 'Wird geladen…',
+
+  // more hub
+  'tab.more': 'Mehr',
+  'more.title': 'Mehr',
+  'more.subtitle': 'Alle für Sie aktivierten Bildschirme',
+  'more.empty': 'Keine weiteren Bildschirme',
+  'more.emptyHint': 'Ihr Administrator hat keine weiteren Bildschirme für Mobilgeräte aktiviert.',
+  'more.offline': 'Offline',
+  'more.loadError': 'Bildschirme konnten nicht geladen werden',
+
+  // catalog groups
+  'group.main': 'Allgemein',
+  'group.dashboards': 'Dashboards',
+  'group.sales': 'Verkauf',
+  'group.inventory': 'Bestand',
+  'group.purchasing': 'Einkauf',
+  'group.accounting': 'Buchhaltung',
+  'group.finance': 'Finanzen',
+  'group.crm': 'CRM',
+  'group.comms': 'Kommunikation',
+  'group.people': 'Personen',
+  'group.admin': 'Verwaltung',
+
+  // extra screen titles
+  'screen.salesDashboard': 'Verkaufs-Dashboard',
+  'screen.dealsDashboard': 'Deals-Dashboard',
+  'screen.inventoryDashboard': 'Bestands-Dashboard',
+  'screen.accountingDashboard': 'Buchhaltungs-Dashboard',
+  'screen.branchDashboard': 'Filial-Dashboard',
+  'screen.executiveDashboard': 'Führungs-Dashboard',
+  'screen.revenueDashboard': 'Umsatz-Dashboard',
+  'screen.growthDashboard': 'Wachstums-Dashboard',
+  'screen.pipeline': 'Pipeline',
+  'screen.reports': 'Berichte',
+  'screen.finance': 'Finanzen',
+  'screen.activity': 'Aktivität',
+  'screen.email': 'E-Mail',
+  'screen.calendar': 'Kalender',
+  'screen.files': 'Dateien',
+  'screen.todo': 'Aufgaben',
+  'screen.notes': 'Notizen',
+  'screen.automation': 'Automatisierung',
+
+  // generic entity list
+  'entity.searchPlaceholder': 'Suchen…',
+  'entity.count': '{n} Datensätze',
+  'entity.empty': 'Nichts hier',
+  'entity.emptyHint': 'Keine Datensätze vorhanden.',
+  'entity.offline': 'Offline',
+  'entity.offlineHint': 'Verbinden, um diesen Bildschirm zu laden.',
+  'entity.noPermission': 'Kein Zugriff',
+  'entity.loadError': 'Dieser Bildschirm konnte nicht geladen werden.',
+
+  // generic entity detail
+  'detail.empty': 'Keine Felder vorhanden.',
+  'detail.notFound': 'Datensatz nicht gefunden.',
+  'detail.loadError': 'Dieser Datensatz konnte nicht geladen werden.',
+
+  // generic dashboard host
+  'dash.accounts': 'Konten',
+  'dash.deals': 'Deals',
+  'dash.openPipeline': 'Offene Pipeline',
+  'dash.won': 'Gewonnen',
+  'dash.byStage': 'Pipeline nach Phase',
+  'dash.empty': 'Noch keine Daten.',
+  'dash.loadError': 'Statistiken konnten nicht geladen werden.',
+
+  // activity feed
+  'feed.empty': 'Keine aktuelle Aktivität.',
+  'feed.event': 'Aktivität',
+  'feed.system': 'System',
 };
 
 export const translations: Record<Lang, Record<TKey, string>> = { en, tr, de };

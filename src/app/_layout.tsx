@@ -12,12 +12,14 @@ import { ThemeProvider, useTheme } from '@/lib/theme/ThemeProvider';
 import { LanguageProvider } from '@/lib/i18n/LanguageProvider';
 import { AuthProvider, useAuth } from '@/lib/auth/AuthProvider';
 import { SyncProvider } from '@/lib/sync/SyncProvider';
+import { useConfigPolling } from '@/lib/access';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function RootNavigator() {
   const { status } = useAuth();
   const { isDark } = useTheme();
+  useConfigPolling();
 
   useEffect(() => {
     if (status !== 'loading') SplashScreen.hideAsync().catch(() => {});
@@ -38,6 +40,9 @@ function RootNavigator() {
         <Stack.Screen name="labels" options={{ presentation: 'card' }} />
         <Stack.Screen name="outbox" options={{ presentation: 'card' }} />
         <Stack.Screen name="settings" options={{ presentation: 'card' }} />
+        <Stack.Screen name="entity/[name]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="entity/[name]/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="screen/[key]" options={{ presentation: 'card' }} />
       </Stack>
     </>
   );

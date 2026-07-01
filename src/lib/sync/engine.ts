@@ -12,12 +12,12 @@
  * Pure functions here; React wiring lives in SyncProvider.
  */
 import { ApiRequestError } from '../api/client';
-import { carts, catalog, inventory, pos, returns } from '../api/endpoints';
+import { carts, entities, inventory, pos, returns } from '../api/endpoints';
 import type { CartLineInput, PosCheckoutBody } from '../api/endpoints';
 import { kvSet } from '../db/database';
 import * as outbox from '../db/outbox';
 import { upsertProducts, upsertStock } from '../db/products';
-import type { Account, Branch, Dealer, OutboxRow, Payment, Warehouse } from '../types';
+import type { Account, Branch, Dealer, OutboxRow, Payment, Product, Warehouse } from '../types';
 
 export interface PushResult {
   pushed: number;
@@ -77,20 +77,34 @@ export interface CatalogSnapshot {
   accounts: Account[];
 }
 
+/**
+ * Backend clamps any list to MAX_PAGE_SIZE (200), so a single big-`pageSize`
+ * request silently truncates the catalogue — which would leave products beyond
+ * the 200th unresolvable offline. Page through in 200-row batches until a short
+ * page signals the end, so the offline cache is complete for barcode lookup.
+ */
+const PAGE_SIZE = 200;
+async function fetchAll<T>(entity: string): Promise<T[]> {
+  const all: T[] = [];
+  for (let page = 1; page <= 1000; page++) {
+    const res = await entities.list<T>(entity, { page, pageSize: PAGE_SIZE });
+    const items = res.items ?? [];
+    all.push(...items);
+    if (items.length < PAGE_SIZE) break; // last (short) page reached
+  }
+  return all;
+}
+
 /** Pull catalogue + reference data into the local cache for offline use. */
 export async function pullCatalog(): Promise<CatalogSnapshot> {
-  const [productsPage, branchesPage, warehousesPage, dealersPage, accountsPage] = await Promise.all([
-    catalog.products(),
-    catalog.branches(),
-    catalog.warehouses(),
-    catalog.dealers(),
-    catalog.accounts(),
+  const [products, branches, warehouses, dealers, accounts] = await Promise.all([
+    fetchAll<Product>('product'),
+    fetchAll<Branch>('branch'),
+    fetchAll<Warehouse>('warehouse'),
+    fetchAll<Dealer>('dealer'),
+    fetchAll<Account>('account'),
   ]);
-  await upsertProducts(productsPage.items ?? []);
-  const branches = branchesPage.items ?? [];
-  const warehouses = warehousesPage.items ?? [];
-  const dealers = dealersPage.items ?? [];
-  const accounts = accountsPage.items ?? [];
+  await upsertProducts(products);
   await Promise.all([
     kvSet('branches', branches),
     kvSet('warehouses', warehouses),
@@ -105,5 +119,5 @@ export async function pullCatalog(): Promise<CatalogSnapshot> {
   } catch {
     /* ignore — role may not have inventory:read */
   }
-  return { products: productsPage.items?.length ?? 0, branches, warehouses, dealers, accounts };
+  return { products: products.length, branches, warehouses, dealers, accounts };
 }
