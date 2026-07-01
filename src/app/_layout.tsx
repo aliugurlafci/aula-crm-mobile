@@ -4,7 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Provider as ReduxProvider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
 
+import { store, persistor } from '@/lib/store';
 import { ThemeProvider, useTheme } from '@/lib/theme/ThemeProvider';
 import { LanguageProvider } from '@/lib/i18n/LanguageProvider';
 import { AuthProvider, useAuth } from '@/lib/auth/AuthProvider';
@@ -42,18 +45,22 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <LanguageProvider>
-            <AuthProvider>
-              <SyncProvider>
-                <RootNavigator />
-              </SyncProvider>
-            </AuthProvider>
-          </LanguageProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ReduxProvider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <SafeAreaProvider>
+            <ThemeProvider>
+              <LanguageProvider>
+                <AuthProvider>
+                  <SyncProvider>
+                    <RootNavigator />
+                  </SyncProvider>
+                </AuthProvider>
+              </LanguageProvider>
+            </ThemeProvider>
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
+      </PersistGate>
+    </ReduxProvider>
   );
 }

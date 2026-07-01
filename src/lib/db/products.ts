@@ -4,6 +4,7 @@
  * SKU). Refreshed by the sync engine when online.
  */
 import { getDb } from './database';
+import { barcodeCandidates } from '../barcode/check-digit';
 import type { Product, StockRow } from '../types';
 
 function rowToProduct(json: string): Product | null {
@@ -51,14 +52,22 @@ export async function upsertProducts(products: Product[]): Promise<number> {
   return products.length;
 }
 
-/** Resolve a scanned code: exact barcode match, then SKU (offline lookup). */
+/** Resolve a scanned code: barcode match across every equivalent symbology form
+ *  (UPC-A/EAN-13/UPC-E), then SKU — mirrors the backend `pos.lookup` exactly. */
 export async function findByCode(code: string): Promise<Product | null> {
-  const c = (code ?? '').trim();
-  if (!c) return null;
+  const candidates = barcodeCandidates(code);
+  if (!candidates.length) return null;
   const db = await getDb();
-  const byBarcode = await db.getFirstAsync<{ json: string }>('SELECT json FROM products WHERE barcode = ? LIMIT 1', c);
+  const placeholders = candidates.map(() => '?').join(', ');
+  const byBarcode = await db.getFirstAsync<{ json: string }>(
+    `SELECT json FROM products WHERE barcode COLLATE NOCASE IN (${placeholders}) LIMIT 1`,
+    ...candidates,
+  );
   if (byBarcode?.json) return rowToProduct(byBarcode.json);
-  const bySku = await db.getFirstAsync<{ json: string }>('SELECT json FROM products WHERE sku = ? COLLATE NOCASE LIMIT 1', c);
+  const bySku = await db.getFirstAsync<{ json: string }>(
+    'SELECT json FROM products WHERE sku = ? COLLATE NOCASE LIMIT 1',
+    candidates[0],
+  );
   return bySku?.json ? rowToProduct(bySku.json) : null;
 }
 

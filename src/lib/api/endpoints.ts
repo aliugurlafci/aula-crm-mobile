@@ -12,6 +12,7 @@ import type {
   EntityRecord,
   Id,
   Me,
+  MobileConfig,
   Payment,
   PosSession,
   Product,
@@ -69,6 +70,17 @@ export const auth = {
   me: () => apiFetch<Me>('/auth/me'),
   logout: () => apiFetch<{ ok: boolean }>('/auth/logout', { method: 'POST' }),
   screens: () => apiFetch<{ screens: { key: string; label: string; group: string }[] }>('/screens'),
+  /** Upsert per-user settings (theme/language/…) on the server, scoped to caller. */
+  updateSettings: (settings: Record<string, string>) =>
+    apiFetch<{ settings: Record<string, string> }>('/auth/settings', { method: 'PATCH', body: { settings } }),
+};
+
+// ---- mobile screen configuration ------------------------------------------
+export const mobile = {
+  /** The screens this user may see on mobile (admin config ∩ permissions) + a
+   *  version stamp the app polls to pick up admin changes. */
+  config: (clientId = 'mobile') =>
+    apiFetch<MobileConfig>(`/mobile/config?clientId=${encodeURIComponent(clientId)}`),
 };
 
 // ---- generic entity CRUD --------------------------------------------------

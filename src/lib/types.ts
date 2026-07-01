@@ -113,9 +113,22 @@ export interface Me {
   position?: { id: string; name: string; role: string } | null;
   screens: string[];
   grants: string[];
+  /** Screens the mobile app may show (a subset of `screens`), from the admin
+   *  mobile-config layer. The nav gate reads this; falls back to `screens`. */
+  mobileScreens?: string[];
+  mobileScreensVersion?: string;
+  mobileHiddenFields?: Record<string, string[]>;
   jobTitle?: string | null;
   twoFactorEnabled?: boolean;
   settings?: Record<string, string>;
+}
+
+/** Resolved mobile screen configuration from GET /mobile/config. */
+export interface MobileConfig {
+  clientId: string;
+  screens: string[];
+  hiddenFields: Record<string, string[]>;
+  version: string;
 }
 
 /** Sale documents that can be queued offline and replayed. */

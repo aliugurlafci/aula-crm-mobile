@@ -1,19 +1,19 @@
 /**
- * Theme context — resolves the active glassmorphism palette from the OS color
- * scheme plus an optional user override ('system' | 'light' | 'dark'), persisted
- * in SecureStore so the choice survives relaunches (mirrors the web appearance
- * setting). Exposes `useTheme()` for every component.
+ * Theme — resolves the active glassmorphism palette from the OS color scheme plus
+ * the user's override ('system' | 'light' | 'dark'). The override now lives in the
+ * Redux `settings` slice (persisted via redux-persist and best-effort mirrored to
+ * the server), so it's truly app-wide and survives relaunches. `useTheme()` keeps
+ * its original shape; `ThemeProvider` is a pass-through kept for tree stability.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 
+import { useAppDispatch, useAppSelector } from '@/lib/store';
+import { setThemeMode, syncPreferencesToServer, type ThemeMode } from '@/lib/store/settingsSlice';
 import { DarkPalette, LightPalette, type Palette } from './tokens';
 
-export type ThemeMode = 'system' | 'light' | 'dark';
+export type { ThemeMode };
 type Scheme = 'light' | 'dark';
-
-const STORE_KEY = 'aula.theme.mode';
 
 type ThemeValue = {
   palette: Palette;
@@ -23,34 +23,26 @@ type ThemeValue = {
   isDark: boolean;
 };
 
-const ThemeContext = createContext<ThemeValue | null>(null);
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+export function useTheme(): ThemeValue {
   const system = useColorScheme();
-  const [mode, setModeState] = useState<ThemeMode>('system');
+  const dispatch = useAppDispatch();
+  const mode = useAppSelector((s) => s.settings.themeMode);
 
-  useEffect(() => {
-    let alive = true;
-    SecureStore.getItemAsync(STORE_KEY)
-      .then((stored) => {
-        if (alive && (stored === 'light' || stored === 'dark' || stored === 'system')) {
-          setModeState(stored);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const setMode = useCallback((next: ThemeMode) => {
-    setModeState(next);
-    SecureStore.setItemAsync(STORE_KEY, next).catch(() => {});
-  }, []);
+  const setMode = useCallback(
+    (next: ThemeMode) => {
+      dispatch(setThemeMode(next));
+      void dispatch(syncPreferencesToServer());
+    },
+    [dispatch],
+  );
 
   const scheme: Scheme = mode === 'system' ? (system === 'dark' ? 'dark' : 'light') : mode;
 
-  const value = useMemo<ThemeValue>(
+  return useMemo<ThemeValue>(
     () => ({
       palette: scheme === 'dark' ? DarkPalette : LightPalette,
       scheme,
@@ -60,12 +52,4 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }),
     [scheme, mode, setMode],
   );
-
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-}
-
-export function useTheme(): ThemeValue {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
-  return ctx;
 }
