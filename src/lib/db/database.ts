@@ -25,10 +25,44 @@ export function getDb(): Promise<SQLite.SQLiteDatabase> {
   return dbPromise;
 }
 
-/** Wipe all local data (used on logout). Keeps the schema. */
-export async function clearLocalData(): Promise<void> {
+export interface ResetOptions {
+  /** Keep unsent outbox entries (queued + failed sales). Default true. */
+  keepQueue?: boolean;
+  /** Keep the redux-persist rows in `kv` (theme / language / server prefs). Default true. */
+  keepPreferences?: boolean;
+}
+
+/**
+ * Truncate every local table so the next sync repopulates the cache from the
+ * API. Needed because the pull path only ever *upserts*: a record deleted,
+ * renamed or re-keyed on the backend has no counterpart event here, so it would
+ * otherwise survive locally forever and drift from what the API defines.
+ *
+ * Two things are deliberately spared by default — unsent sales (deleting them
+ * loses money) and the persisted UI/server preferences (they aren't API data,
+ * and wiping them would reset the backend URL row and the theme). The table list
+ * is read from `sqlite_master` rather than hardcoded, so a table added later is
+ * never silently left behind.
+ */
+export async function resetDatabase({ keepQueue = true, keepPreferences = true }: ResetOptions = {}): Promise<void> {
   const db = await getDb();
-  await db.execAsync('DELETE FROM products; DELETE FROM stock; DELETE FROM kv; DELETE FROM outbox;');
+  const tables = await db.getAllAsync<{ name: string }>(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+  );
+  await db.withTransactionAsync(async () => {
+    for (const { name } of tables) {
+      if (name === 'outbox' && keepQueue) {
+        await db.runAsync("DELETE FROM outbox WHERE status = 'done'");
+      } else if (name === 'kv' && keepPreferences) {
+        await db.runAsync("DELETE FROM kv WHERE k NOT LIKE 'persist:%'");
+      } else {
+        // Identifier comes from sqlite_master, never from user input.
+        await db.runAsync(`DELETE FROM ${name}`);
+      }
+    }
+  });
+  // Reclaim the freed pages; best-effort (VACUUM cannot run inside a transaction).
+  await db.execAsync('VACUUM').catch(() => {});
 }
 
 // ---- generic KV cache -----------------------------------------------------

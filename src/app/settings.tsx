@@ -11,10 +11,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useSync } from '@/lib/sync/SyncProvider';
 import { useAppDispatch } from '@/lib/store';
-import { changeBackendBaseUrl } from '@/lib/store/settingsSlice';
+import { changeBackendBaseUrl, resetBackendBaseUrl } from '@/lib/store/settingsSlice';
 import { useScreenAccess } from '@/lib/access';
-import { getBaseUrl } from '@/lib/api/client';
-import { clearLocalData } from '@/lib/db/database';
+import { getBaseUrl, getDefaultBaseUrl, pingBaseUrl } from '@/lib/api/client';
 import { initials, relativeTime } from '@/lib/format';
 import type { OutboxRow } from '@/lib/types';
 import { useTheme, type ThemeMode } from '@/lib/theme/ThemeProvider';
@@ -51,13 +50,15 @@ export default function SettingsScreen() {
   const { palette, mode, setMode } = useTheme();
   const { lang, setLang, t } = useI18n();
   const { me, grants, can, logout, offline } = useAuth();
-  const { online, counts, sync, syncing, retryFailed, discardFailed, listRecent } = useSync();
+  const { online, counts, sync, syncing, resetData, retryFailed, discardFailed, listRecent } = useSync();
   const { screens: mobileScreens, refresh: refreshConfig } = useScreenAccess();
   const dispatch = useAppDispatch();
 
   const [server, setServer] = useState(getBaseUrl());
   const [editingServer, setEditingServer] = useState(false);
   const [recent, setRecent] = useState<OutboxRow[]>([]);
+  const [resetting, setResetting] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   const loadRecent = useCallback(async () => setRecent(await listRecent(20)), [listRecent]);
   useEffect(() => {
@@ -69,6 +70,26 @@ export default function SettingsScreen() {
     setServer(getBaseUrl());
     setEditingServer(false);
     Alert.alert(t('settings.savedTitle'), t('settings.savedMessage'));
+  };
+
+  /** Probe the backend so "can't see the API" resolves to a concrete cause —
+   *  wrong host (nothing answers) vs. a backend that answers with an error. */
+  const testConnection = async () => {
+    setTesting(true);
+    const url = getBaseUrl();
+    const res = await pingBaseUrl(url);
+    setTesting(false);
+    if (res.ok) Alert.alert(t('settings.testOkTitle'), t('settings.testOkMessage', { url }));
+    else Alert.alert(t('settings.testFailTitle'), t('settings.testFailMessage', { url, reason: res.error ?? `HTTP ${res.status}` }));
+  };
+
+  /** A URL saved on another network outlives reinstalls (SecureStore); this puts
+   *  the device back on the auto-detected dev-server host. */
+  const restoreDefaultServer = async () => {
+    const url = await dispatch(resetBackendBaseUrl()).unwrap();
+    setServer(url);
+    setEditingServer(false);
+    Alert.alert(t('settings.savedTitle'), t('settings.defaultRestored', { url }));
   };
 
   const confirmLogout = () =>
@@ -84,18 +105,30 @@ export default function SettingsScreen() {
       },
     ]);
 
-  const confirmClear = () =>
-    Alert.alert(t('settings.clearTitle'), t('settings.clearMessage'), [
+  /**
+   * Recovery path for a device whose cache no longer matches the API: the sync
+   * pull only upserts, so a record deleted or re-keyed on the backend survives
+   * locally until the tables are emptied. Truncate, re-pull, then report what
+   * came back — the reset is only half-done until the pull succeeds, so a
+   * failure has to be visible rather than leaving a silently empty app.
+   */
+  const runReset = async () => {
+    setResetting(true);
+    try {
+      const { products, keptQueue } = await resetData();
+      await loadRecent();
+      Alert.alert(t('settings.resetDoneTitle'), t('settings.resetDoneMessage', { products, queued: keptQueue }));
+    } catch (err) {
+      Alert.alert(t('settings.resetFailedTitle'), t('settings.resetFailedMessage', { error: (err as Error)?.message ?? String(err) }));
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const confirmReset = () =>
+    Alert.alert(t('settings.resetTitle'), online ? t('settings.resetMessage') : t('settings.resetOffline'), [
       { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('settings.clear'),
-        style: 'destructive',
-        onPress: async () => {
-          await clearLocalData();
-          void sync('after-clear');
-          void loadRecent();
-        },
-      },
+      { text: t('settings.reset'), style: 'destructive', onPress: () => void runReset() },
     ]);
 
   return (
@@ -194,12 +227,32 @@ export default function SettingsScreen() {
               </View>
             </>
           ) : (
-            <Pressable onPress={() => setEditingServer(true)} style={styles.linkRow}>
-              <Text variant="body" tone="muted" numberOfLines={1} style={{ flex: 1 }}>
-                {getBaseUrl()}
-              </Text>
-              <Ionicons name="create-outline" size={18} color={palette.muted} />
-            </Pressable>
+            <>
+              <Pressable onPress={() => setEditingServer(true)} style={styles.linkRow}>
+                <Text variant="body" tone="muted" numberOfLines={1} style={{ flex: 1 }}>
+                  {getBaseUrl()}
+                </Text>
+                <Ionicons name="create-outline" size={18} color={palette.muted} />
+              </Pressable>
+              <View style={styles.rowBtns}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title={t('settings.testConnection')}
+                    variant="ghost"
+                    size="sm"
+                    icon="pulse-outline"
+                    loading={testing}
+                    disabled={testing}
+                    onPress={testConnection}
+                  />
+                </View>
+                {getBaseUrl() !== getDefaultBaseUrl() ? (
+                  <View style={{ flex: 1 }}>
+                    <Button title={t('settings.restoreDefault')} variant="ghost" size="sm" icon="refresh" onPress={restoreDefaultServer} />
+                  </View>
+                ) : null}
+              </View>
+            </>
           )}
         </Card>
 
@@ -279,7 +332,24 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
-        <Button title={t('settings.clearData')} variant="outline" icon="trash-bin-outline" onPress={confirmClear} />
+        {/* local database — truncate + re-pull when the cache drifts from the API */}
+        <Card style={{ gap: Spacing.sm }}>
+          <Text variant="subtitle" weight="bold">
+            {t('settings.localData')}
+          </Text>
+          <Text variant="caption" tone="muted">
+            {t('settings.resetHint')}
+          </Text>
+          <Button
+            title={resetting ? t('settings.resetting') : t('settings.resetData')}
+            variant="outline"
+            icon="trash-bin-outline"
+            loading={resetting}
+            disabled={resetting || syncing}
+            onPress={confirmReset}
+          />
+        </Card>
+
         <Button title={t('settings.signOut')} variant="danger" icon="log-out-outline" onPress={confirmLogout} />
       </ScrollView>
     </Screen>

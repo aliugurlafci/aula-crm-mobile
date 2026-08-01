@@ -6,9 +6,12 @@
  * overlapping (as the old provider's ref did). `useSync()` keeps its old shape.
  */
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { kvSet, resetDatabase } from '@/lib/db/database';
 import * as outbox from '@/lib/db/outbox';
 import { pullCatalog, pushOutbox } from '@/lib/sync/engine';
-import type { OutboxKind, OutboxRow } from '@/lib/types';
+import type { Me, OutboxKind, OutboxRow } from '@/lib/types';
+import { refreshMe } from './authSlice';
+import { refreshMobileConfig } from './configSlice';
 
 export interface SyncCounts {
   pending: number;
@@ -56,6 +59,62 @@ export const runSync = createAsyncThunk('sync/run', async (_arg, { dispatch, get
       }
     }
     dispatch(setLastSyncAt(Date.now()));
+  } finally {
+    running = false;
+    dispatch(setSyncing(false));
+  }
+});
+
+export interface ResetResult {
+  /** Products re-pulled from the API. */
+  products: number;
+  /** Unsent sales carried across the reset. */
+  keptQueue: number;
+}
+
+/**
+ * Reset the local cache, then re-pull everything from the API.
+ *
+ * The recovery path for a device whose cache has drifted from the backend: the
+ * pull only upserts, so records deleted or re-keyed on the server linger locally
+ * and keep showing stale values. Truncating first guarantees the next screen the
+ * user opens reflects the API exactly. Unsent sales and device preferences
+ * survive (see `resetDatabase`), and the cached profile is re-written from the
+ * in-memory session so a reset performed offline can't strand the user at the
+ * login screen on the next launch.
+ *
+ * Rejects if the re-pull fails, so the caller can tell the user the cache is now
+ * empty and a sync is still owed — never silently leave a blank app behind.
+ */
+export const resetLocalData = createAsyncThunk<ResetResult>('sync/reset', async (_arg, { dispatch, getState }) => {
+  const state = getState() as { auth: { status: string; me: Me | null } };
+  if (running) throw new Error('A sync is already running');
+  running = true;
+  dispatch(setSyncing(true));
+  try {
+    await resetDatabase();
+    if (state.auth.me) await kvSet('me', state.auth.me); // keep offline bootstrap alive
+    const counts = await outbox.counts();
+    dispatch(setCounts(counts));
+
+    if (state.auth.status === 'authenticated') {
+      // Profile + admin screen config first: they decide what the user may see.
+      await dispatch(refreshMe());
+      await dispatch(refreshMobileConfig());
+      const snapshot = await pullCatalog();
+      // Flush whatever the queue carried across — best-effort, the pull is what
+      // this action promises, so a blocked drain must not read as a failed reset.
+      try {
+        const push = await pushOutbox();
+        if (push.pushed || push.failed) dispatch(setCounts(await outbox.counts()));
+      } catch {
+        /* queue stays for the next sync */
+      }
+      dispatch(setLastSyncAt(Date.now()));
+      return { products: snapshot.products, keptQueue: counts.pending + counts.failed };
+    }
+    dispatch(setLastSyncAt(Date.now()));
+    return { products: 0, keptQueue: counts.pending + counts.failed };
   } finally {
     running = false;
     dispatch(setSyncing(false));

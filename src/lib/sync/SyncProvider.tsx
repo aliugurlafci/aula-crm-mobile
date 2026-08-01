@@ -12,11 +12,13 @@ import * as Network from 'expo-network';
 import { store, useAppDispatch, useAppSelector } from '@/lib/store';
 import {
   refreshCounts as refreshCountsThunk,
+  resetLocalData,
   runSync,
   submitOutbox,
   retryFailed as retryFailedThunk,
   discardFailed as discardFailedThunk,
   setOnline,
+  type ResetResult,
   type SyncCounts,
 } from '@/lib/store/syncSlice';
 import * as outbox from '../db/outbox';
@@ -29,6 +31,8 @@ export interface SyncValue {
   lastSyncAt: number | null;
   submit: (kind: OutboxKind, payload: unknown, idempotencyKey?: string) => Promise<OutboxRow>;
   sync: (reason?: string) => Promise<void>;
+  /** Truncate the local cache and re-pull it from the API (Settings → reset). */
+  resetData: () => Promise<ResetResult>;
   refreshCounts: () => Promise<void>;
   retryFailed: (id: string) => Promise<void>;
   discardFailed: (id: string) => Promise<void>;
@@ -90,6 +94,7 @@ export function useSync(): SyncValue {
       lastSyncAt,
       submit: (kind, payload, idempotencyKey) => dispatch(submitOutbox({ kind, payload, idempotencyKey })).unwrap(),
       sync: () => dispatch(runSync()).unwrap(),
+      resetData: () => dispatch(resetLocalData()).unwrap(),
       refreshCounts: () => dispatch(refreshCountsThunk()).unwrap(),
       retryFailed: (id) => dispatch(retryFailedThunk(id)).unwrap(),
       discardFailed: (id) => dispatch(discardFailedThunk(id)).unwrap(),

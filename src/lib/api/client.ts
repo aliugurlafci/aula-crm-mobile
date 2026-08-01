@@ -15,6 +15,7 @@
  */
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 export interface FieldDetail {
   field?: string;
@@ -50,12 +51,62 @@ export class ApiRequestError extends Error {
 }
 
 const BASE_URL_KEY = 'aula.api.baseUrl';
-const DEFAULT_BASE_URL =
-  (Constants.expoConfig?.extra as { defaultApiBaseUrl?: string } | undefined)?.defaultApiBaseUrl ??
-  'http://192.168.79.31:4000';
+
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
+
+/** Host serving the JS bundle — e.g. "192.168.1.107:8081" under `expo start`. */
+function metroHost(): string | null {
+  const hostUri =
+    Constants.expoConfig?.hostUri ??
+    (Constants.expoGoConfig as { debuggerHost?: string } | undefined)?.debuggerHost ??
+    null;
+  return hostUri?.split('/')[0]?.split(':')[0] ?? null;
+}
+
+/**
+ * Repair a base URL whose host cannot possibly be the backend.
+ *
+ * `http://localhost:4000` means "this machine". In a browser that is the dev
+ * machine, so it works — but on a phone it is the phone and on the Android
+ * emulator it is the emulator, and the app spends every request talking to
+ * itself. It then reports "network unavailable", which reads exactly like a
+ * backend that is down.
+ *
+ * The machine serving the JS bundle is the one running the API, so a loopback
+ * host is swapped for Metro's host. Keying off Metro rather than a
+ * simulator-vs-device check keeps this correct in every combination: when Metro
+ * reports a LAN address, that address is reachable from the simulator and the
+ * phone alike; when it reports loopback (web, or a tunnelled/adb-reversed
+ * setup), loopback is genuinely right and nothing is touched. It also survives
+ * the router handing out a new address, which a hardcoded IP does not. Any
+ * non-loopback host — LAN, staging, production — is left alone.
+ */
+function repairUnreachableHost(url: string): string {
+  const match = url.match(/^(https?:\/\/)([^/:]+)(:\d+)?$/);
+  if (!match) return url;
+  const [, scheme, host, port = ''] = match;
+  if (!LOOPBACK.has(host.toLowerCase())) return url;
+  if (Platform.OS === 'web') return url; // the browser IS on the dev machine
+
+  const detected = metroHost();
+  if (detected && !LOOPBACK.has(detected.toLowerCase())) return `${scheme}${detected}${port}`;
+  // Android emulator reaches its host machine's loopback only through 10.0.2.2.
+  if (Platform.OS === 'android') return `${scheme}10.0.2.2${port}`;
+  return url;
+}
+
+/** Effective default backend URL: `extra.defaultApiBaseUrl`, host-repaired. */
+export function getDefaultBaseUrl(): string {
+  return repairUnreachableHost(
+    normalizeBaseUrl(
+      (Constants.expoConfig?.extra as { defaultApiBaseUrl?: string } | undefined)?.defaultApiBaseUrl ??
+        'http://localhost:4000',
+    ),
+  );
+}
 
 // ---- runtime state (set by AuthProvider / Settings) -----------------------
-let baseUrl = DEFAULT_BASE_URL;
+let baseUrl = getDefaultBaseUrl();
 let bearerToken: string | null = null;
 let csrfToken: string | null = null;
 /** Session JWT scraped from a login `Set-Cookie` (email/password path, where the
@@ -66,10 +117,17 @@ export function getBaseUrl(): string {
   return baseUrl;
 }
 
+/**
+ * The stored override wins over the default — but it is repaired the same way,
+ * because it is the likelier place for an unreachable host to hide: SecureStore
+ * survives reinstalls, so a `localhost` typed once on a simulator keeps the app
+ * offline forever afterwards on real hardware, no matter what the code defaults
+ * to. The raw value is left on disk; only what we dial is corrected.
+ */
 export async function loadBaseUrl(): Promise<string> {
   try {
     const stored = await SecureStore.getItemAsync(BASE_URL_KEY);
-    if (stored) baseUrl = stored;
+    if (stored) baseUrl = repairUnreachableHost(normalizeBaseUrl(stored));
   } catch {
     /* ignore */
   }
@@ -77,11 +135,47 @@ export async function loadBaseUrl(): Promise<string> {
 }
 
 export async function setBaseUrl(url: string): Promise<void> {
-  baseUrl = normalizeBaseUrl(url);
+  const entered = normalizeBaseUrl(url);
+  baseUrl = repairUnreachableHost(entered);
   try {
-    await SecureStore.setItemAsync(BASE_URL_KEY, baseUrl);
+    await SecureStore.setItemAsync(BASE_URL_KEY, entered);
   } catch {
     /* ignore */
+  }
+}
+
+/**
+ * Drop the stored override and go back to the detected default. The override
+ * lives in SecureStore, which survives a reinstall — so a URL saved on an old
+ * network (or an old dev machine) keeps the app pointed at a dead host with no
+ * way back except retyping it. This is that way back.
+ */
+export async function resetBaseUrl(): Promise<string> {
+  try {
+    await SecureStore.deleteItemAsync(BASE_URL_KEY);
+  } catch {
+    /* ignore */
+  }
+  baseUrl = getDefaultBaseUrl();
+  return baseUrl;
+}
+
+/** Probe `/health` on a URL without touching the client's own state — used by
+ *  Settings to tell "wrong URL" apart from "backend down" before saving. */
+export async function pingBaseUrl(url: string, timeoutMs = 5_000): Promise<{ ok: boolean; status: number; error?: string }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${normalizeBaseUrl(url)}/api/v1/health`, {
+      headers: { accept: 'application/json' },
+      signal: controller.signal,
+    });
+    return { ok: res.ok, status: res.status };
+  } catch (err) {
+    const aborted = err instanceof Error && err.name === 'AbortError';
+    return { ok: false, status: 0, error: aborted ? 'TIMEOUT' : 'NETWORK' };
+  } finally {
+    clearTimeout(timer);
   }
 }
 

@@ -8,7 +8,7 @@
  */
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import * as SecureStore from 'expo-secure-store';
-import { getBaseUrl, loadBaseUrl, setBaseUrl } from '@/lib/api/client';
+import { getBaseUrl, loadBaseUrl, resetBaseUrl, setBaseUrl } from '@/lib/api/client';
 import { auth } from '@/lib/api/endpoints';
 import { LANGUAGES, type Lang } from '@/lib/i18n/translations';
 
@@ -44,6 +44,9 @@ export const changeBackendBaseUrl = createAsyncThunk('settings/changeBackendBase
   return getBaseUrl();
 });
 
+/** Forget a saved backend URL and fall back to the auto-detected default. */
+export const resetBackendBaseUrl = createAsyncThunk('settings/resetBackendBaseUrl', async () => resetBaseUrl());
+
 /** Best-effort push of the local preferences to the server (ignored when offline
  *  or signed out — the local values remain authoritative). */
 export const syncPreferencesToServer = createAsyncThunk<void, void, { state: { settings: SettingsState } }>(
@@ -78,6 +81,9 @@ const settingsSlice = createSlice({
         state.backendBaseUrl = action.payload;
       })
       .addCase(changeBackendBaseUrl.fulfilled, (state, action) => {
+        state.backendBaseUrl = action.payload;
+      })
+      .addCase(resetBackendBaseUrl.fulfilled, (state, action) => {
         state.backendBaseUrl = action.payload;
       });
   },
