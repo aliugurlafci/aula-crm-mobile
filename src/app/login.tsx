@@ -18,6 +18,7 @@ import { useI18n } from '@/lib/i18n/LanguageProvider';
 import type { TKey } from '@/lib/i18n/translations';
 import { Spacing } from '@/lib/theme/tokens';
 import { ScreenBackground } from '@/components/ui/ScreenBackground';
+import { BrandMark } from '@/components/ui/BrandMark';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { Input } from '@/components/ui/Input';
@@ -90,8 +91,8 @@ export default function LoginScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.brand}>
-            <View style={[styles.logo, { backgroundColor: palette.primary }]}>
-              <Ionicons name="cart" size={34} color="#fff" />
+            <View style={[styles.logo, { backgroundColor: palette.surface2, borderColor: palette.glassBorder }]}>
+              <BrandMark size={46} />
             </View>
             <Text variant="display" weight="heavy">
               Aula POS
@@ -200,7 +201,15 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   scroll: { padding: Spacing.lg, paddingTop: Spacing.xxl * 1.6, gap: Spacing.lg, paddingBottom: Spacing.xxl },
   brand: { alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm },
-  logo: { width: 72, height: 72, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs },
+  logo: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xs,
+  },
   divider: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   line: { flex: 1, height: StyleSheet.hairlineWidth },
   personas: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },

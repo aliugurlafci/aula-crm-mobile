@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" width="900" height="900" fill="none">
+  
+  <g transform="translate(0 0) scale(9)"><defs>
+    <linearGradient id="mk-top" x1="18" y1="12" x2="82" y2="49" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ffd9d2"/>
+    </linearGradient>
+    <linearGradient id="mk-left" x1="18" y1="31" x2="50" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fb4b2a"/>
+      <stop offset="1" stop-color="#e41f07"/>
+    </linearGradient>
+    <linearGradient id="mk-right" x1="82" y1="31" x2="50" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c81b06"/>
+      <stop offset="1" stop-color="#8f1104"/>
+    </linearGradient>
+    <linearGradient id="mk-bar" x1="50" y1="80" x2="82" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.9"/>
+    </linearGradient>
+    <radialGradient id="mk-shadow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e41f07" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#e41f07" stop-opacity="0"/>
+    </radialGradient></defs><path d="M50 16.975L74.045 30.5L50 44.025L25.955 30.5Z" fill="url(#mk-top)" stroke="url(#mk-top)" stroke-width="5" stroke-linejoin="round"/><path d="M21.9 37.168L46.1 50.781L46.1 80.832L21.9 67.219Z" fill="url(#mk-left)" stroke="url(#mk-left)" stroke-width="5" stroke-linejoin="round"/><path d="M53.9 50.781L78.1 37.168L78.1 67.219L53.9 80.832Z" fill="url(#mk-right)" stroke="url(#mk-right)" stroke-width="5" stroke-linejoin="round"/><path d="M55.72 67.39L59.96 65.005L59.96 73.409L55.72 75.794Z" fill="url(#mk-bar)" stroke="url(#mk-bar)" stroke-width="1.6" stroke-linejoin="round"/><path d="M64.04 58.077L68.28 55.692L68.28 68.729L64.04 71.114Z" fill="url(#mk-bar)" stroke="url(#mk-bar)" stroke-width="1.6" stroke-linejoin="round"/><path d="M72.36 48.763L76.6 46.378L76.6 64.049L72.36 66.434Z" fill="url(#mk-bar)" stroke="url(#mk-bar)" stroke-width="1.6" stroke-linejoin="round"/></g>
+</svg>
