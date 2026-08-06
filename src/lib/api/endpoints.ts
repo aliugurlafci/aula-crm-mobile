@@ -147,9 +147,29 @@ export interface CartLineInput {
   taxRate: number;
 }
 
+/** Cart lifecycle actions the server says this session may run on a cart. */
+export type CartAction = 'send' | 'suspend' | 'resume' | 'checkout' | 'credit' | 'cancel';
+
+export interface CartListQuery {
+  /** Statuses to include; defaults to open drafts when omitted. */
+  statuses?: string[];
+  /** Exact register pickup code. */
+  code?: number;
+  /** Only baskets the signed-in user created. */
+  mine?: boolean;
+}
+
 export const carts = {
-  list: () => apiFetch<Page<EntityRecord>>('/carts'),
-  get: (id: Id) => apiFetch<{ doc: EntityRecord; lines: EntityRecord[] }>(`/carts/${id}`),
+  list: (query: CartListQuery = {}) => {
+    const sp = new URLSearchParams();
+    if (query.statuses?.length) sp.set('status', query.statuses.join(','));
+    if (query.code) sp.set('code', String(query.code));
+    if (query.mine) sp.set('mine', '1');
+    const qs = sp.toString();
+    return apiFetch<Page<EntityRecord> & { actions?: Record<string, CartAction[]> }>(`/carts${qs ? `?${qs}` : ''}`);
+  },
+  get: (id: Id) =>
+    apiFetch<{ doc: EntityRecord; lines: EntityRecord[]; actions?: CartAction[] }>(`/carts/${id}`),
   create: (body: {
     accountId?: string | null;
     branchId?: string | null;
@@ -161,10 +181,16 @@ export const carts = {
   update: (id: Id, body: { header?: Record<string, unknown>; lines?: CartLineInput[] }) =>
     apiFetch<{ doc: EntityRecord; lines: EntityRecord[] }>(`/carts/${id}`, { method: 'PUT', body }),
   remove: (id: Id) => apiFetch<{ ok: boolean }>(`/carts/${id}`, { method: 'DELETE' }),
-  checkout: (id: Id, payments: Payment[], idempotencyKey?: string) =>
+  /** Hand the basket to the cash desk; the response carries its pickup code. */
+  send: (id: Id) => apiFetch<{ cart: EntityRecord; code: number }>(`/carts/${id}/send`, { method: 'POST', body: {} }),
+  suspend: (id: Id) => apiFetch<{ cart: EntityRecord }>(`/carts/${id}/suspend`, { method: 'POST', body: {} }),
+  resume: (id: Id) => apiFetch<{ cart: EntityRecord }>(`/carts/${id}/resume`, { method: 'POST', body: {} }),
+  cancel: (id: Id) => apiFetch<{ cart: EntityRecord }>(`/carts/${id}/cancel`, { method: 'POST', body: {} }),
+  /** Close the cart: tender the payments, or settle it on the customer's account. */
+  checkout: (id: Id, payments: Payment[], idempotencyKey?: string, settlement: 'paid' | 'credit' = 'paid') =>
     apiFetch<{ invoice: EntityRecord; total: number; change: number }>(`/carts/${id}/checkout`, {
       method: 'POST',
-      body: { payments },
+      body: { payments, settlement },
       headers: idempotencyKey ? { 'idempotency-key': idempotencyKey } : undefined,
     }),
 };

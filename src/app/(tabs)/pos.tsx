@@ -14,7 +14,7 @@ import { useDebounce } from '@/lib/hooks/useDebounce';
 import { useSaleCart } from '@/lib/hooks/useSaleCart';
 import { resolveProduct } from '@/lib/pos/resolve';
 import { searchProducts, onHandTotal } from '@/lib/db/products';
-import { pos } from '@/lib/api/endpoints';
+import { carts, pos } from '@/lib/api/endpoints';
 import type { PosCheckoutBody } from '@/lib/api/endpoints';
 import { money, uid } from '@/lib/format';
 import type { Payment, PosSession, Product } from '@/lib/types';
@@ -49,9 +49,13 @@ export default function PosScreen() {
   const [results, setResults] = useState<Product[]>([]);
   const [scanning, setScanning] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [sending, setSending] = useState(false);
   const [stockWarn, setStockWarn] = useState<Record<string, boolean>>({});
 
   const canCheckout = can('pos:checkout');
+  // The other way to finish a basket: hand it to the cash desk instead of
+  // tendering here. Both are separate grants, so a position may hold either.
+  const canSend = can('cart:send') && can('cart:create');
   const branchId = warehouses.find((w) => w.id === warehouseId)?.branchId ?? branches[0]?.id ?? null;
   const total = cart.totals.total;
 
@@ -140,6 +144,43 @@ export default function PosScreen() {
     );
   };
 
+  /**
+   * Send the basket to the cash desk: persist it as a cart, then show the pickup
+   * code the customer quotes at the till. Server-assigned, so it needs a
+   * connection — an offline sale still goes through the tender queue.
+   */
+  const sendToRegister = async () => {
+    if (!cart.lines.length) return;
+    if (!online) {
+      Alert.alert(t('cartEdit.offlineTitle'), t('cartEdit.offlineSend'));
+      return;
+    }
+    setSending(true);
+    try {
+      const created = await carts.create({
+        warehouseId,
+        branchId,
+        accountId: dealerId,
+        currencyCode: CURRENCY,
+        lines: cart.lines.map((l) => ({
+          productId: l.productId,
+          description: l.description,
+          qty: l.qty,
+          unitPrice: l.unitPrice,
+          taxRate: l.taxRate,
+        })),
+      });
+      const { code } = await carts.send(String(created.doc.id));
+      cart.clear();
+      setStockWarn({});
+      Alert.alert(t('cartEdit.sentTitle'), t('cartEdit.sentBody', { code: String(code) }));
+    } catch {
+      Alert.alert(t('common.error'), t('cartEdit.sendFailed'));
+    } finally {
+      setSending(false);
+    }
+  };
+
   const onShift = () => {
     if (!online) {
       Alert.alert(t('pos.shiftOfflineTitle'), t('pos.shiftOfflineMsg'));
@@ -170,7 +211,9 @@ export default function PosScreen() {
     }
   };
 
-  if (!canCheckout) {
+  // Either way of finishing a basket justifies the terminal; only a session with
+  // neither grant has nothing to do here.
+  if (!canCheckout && !canSend) {
     return (
       <Screen title={t('pos.title')}>
         <EmptyState icon="lock-closed-outline" title={t('pos.noPermTitle')} hint={t('pos.noPermHint')} />
@@ -244,7 +287,9 @@ export default function PosScreen() {
 
       <FlatList
         style={{ flex: 1, marginTop: Spacing.sm }}
-        contentContainerStyle={{ paddingBottom: tabBarSpace + 150 }}
+        // Clears the floating checkout panel, which grows by a row when this
+        // session may both send to the register and tender here.
+        contentContainerStyle={{ paddingBottom: tabBarSpace + (canSend && canCheckout ? 212 : 150) }}
         data={cart.lines}
         keyExtractor={(l) => l.key}
         keyboardShouldPersistTaps="handled"
@@ -272,7 +317,28 @@ export default function PosScreen() {
           </View>
           {!online ? <Badge tone="warning" label={t('common.offline')} /> : null}
         </View>
-        <Button title={t('pos.charge')} icon="card-outline" size="lg" disabled={!cart.lines.length} onPress={() => setPaying(true)} />
+        {/* The two ways to finish a basket: hand it to the cash desk, or tender
+            it here. Full-width and stacked so either label stays readable. */}
+        {canSend ? (
+          <Button
+            title={t('cartEdit.sendToRegister')}
+            icon="paper-plane-outline"
+            variant={canCheckout ? 'outline' : 'primary'}
+            size="lg"
+            loading={sending}
+            disabled={!cart.lines.length}
+            onPress={sendToRegister}
+          />
+        ) : null}
+        {canCheckout ? (
+          <Button
+            title={t('pos.charge')}
+            icon="card-outline"
+            size="lg"
+            disabled={!cart.lines.length || sending}
+            onPress={() => setPaying(true)}
+          />
+        ) : null}
       </Glass>
 
       <ScannerSheet visible={scanning} onClose={() => setScanning(false)} onScan={onScan} title={t('pos.scanToSell')} />

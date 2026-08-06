@@ -57,7 +57,8 @@ export const ROLE_GRANTS: Record<string, string[]> = {
   sales_rep: [
     'account:read', 'deal:read', 'deal:create', 'deal:update', 'task:read', 'task:create',
     'task:update', 'product:read', 'quote:read', 'quoteLine:read', 'salesOrder:read',
-    'salesOrder:create', 'salesOrder:update', 'cart:*', 'cartLine:*', 'salesReturn:read',
+    'salesOrder:create', 'salesOrder:update', 'cart:read', 'cart:create', 'cart:update',
+    'cart:delete', 'cart:send', 'cart:checkout', 'cart:cancel', 'cartLine:*', 'salesReturn:read',
     'salesReturn:create', 'salesReturn:update', 'salesReturn:post', 'salesReturnLine:*',
     'branch:read', 'dealer:read', 'dealer:create', 'dealer:update', 'warehouse:read',
     'stockMovement:read', 'labelTemplate:read', 'posSession:*', 'pos:checkout',
@@ -65,7 +66,8 @@ export const ROLE_GRANTS: Record<string, string[]> = {
   accountant: [
     'account:read', 'deal:read', 'product:*', 'currency:*', 'taxRate:*', 'quote:*',
     'quoteLine:*', 'invoice:*', 'invoiceLine:*', 'payment:*', 'salesOrder:read',
-    'salesReturn:read', 'branch:read', 'dealer:read', 'warehouse:read', 'supplier:read',
+    'cart:read', 'cart:update', 'cart:checkout', 'cart:credit', 'cart:suspend', 'cart:cancel',
+    'cartLine:*', 'salesReturn:read', 'branch:read', 'dealer:read', 'warehouse:read', 'supplier:read',
     'stockMovement:read', 'purchaseOrder:read', 'goodsReceipt:read', 'labelTemplate:read',
     'posSession:read', 'pii:read',
   ],
