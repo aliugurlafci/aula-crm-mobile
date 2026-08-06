@@ -1,11 +1,21 @@
 /**
- * Glass card — the default content surface. Thin wrapper over Glass with
- * sensible padding + shadow tuned per scheme.
+ * Glass card — the default content surface. Thin wrapper over Glass that adds
+ * padding and the `--shadow-glass` drop shadow.
+ *
+ * The shadow lives on an outer view rather than on the Glass itself: Glass needs
+ * `overflow: 'hidden'` to clip its fill to the corner radius, and on iOS that sets
+ * `clipsToBounds`, which clips the layer shadow away too. With both on one node a
+ * card rendered completely flat — invisible in light mode, where the shadow is the
+ * only thing separating a near-white surface from a near-white backdrop.
+ *
+ * The caller's `style` is applied to the Glass, which now holds the children
+ * directly, so content layout (`gap`, `alignItems`, `flexDirection`) reaches the
+ * box it is written for.
  */
-import { Platform, StyleSheet, View, type ViewProps } from 'react-native';
+import { StyleSheet, View, type ViewProps } from 'react-native';
 
 import { useTheme } from '@/lib/theme/ThemeProvider';
-import { Radius, Spacing } from '@/lib/theme/tokens';
+import { GlassShadow, Radius, Spacing } from '@/lib/theme/tokens';
 import { Glass } from './Glass';
 
 export interface CardProps extends ViewProps {
@@ -15,20 +25,16 @@ export interface CardProps extends ViewProps {
 }
 
 export function Card({ padded = true, strong, radius = Radius.lg, style, children, ...rest }: CardProps) {
-  const { isDark } = useTheme();
+  const { palette } = useTheme();
   return (
-    <Glass strong={strong} radius={radius} style={[styles.shadow, isDark ? styles.shadowDark : styles.shadowLight, style]} {...rest}>
-      <View style={padded ? styles.padded : undefined}>{children}</View>
-    </Glass>
+    <View style={{ borderRadius: radius, boxShadow: [{ ...GlassShadow, color: palette.shadow }] }}>
+      <Glass strong={strong} radius={radius} style={[padded ? styles.padded : null, style]} {...rest}>
+        {children}
+      </Glass>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   padded: { padding: Spacing.lg },
-  shadow: Platform.select({
-    ios: { shadowOffset: { width: 0, height: 10 }, shadowRadius: 24 },
-    default: { elevation: 4 },
-  }) as object,
-  shadowLight: Platform.select({ ios: { shadowColor: '#0f172a', shadowOpacity: 0.14 }, default: {} }) as object,
-  shadowDark: Platform.select({ ios: { shadowColor: '#000', shadowOpacity: 0.5 }, default: {} }) as object,
 });

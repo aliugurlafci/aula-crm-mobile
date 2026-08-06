@@ -4,6 +4,7 @@
  */
 import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
@@ -56,10 +57,10 @@ export function Button({
             ? palette.danger
             : null;
   const isOutline = variant === 'outline';
-  const isGhost = variant === 'ghost';
   const fg = filled ? palette.primaryForeground : isOutline ? palette.foreground : palette.primary;
   const height = size === 'lg' ? 56 : size === 'sm' ? 38 : 48;
   const isDisabled = disabled || loading;
+  const radius = Radius.md;
 
   return (
     <AnimatedPressable
@@ -77,16 +78,30 @@ export function Button({
         {
           height,
           paddingHorizontal: size === 'lg' ? Spacing.xl : Spacing.lg,
-          backgroundColor: filled ?? (isGhost ? 'transparent' : isOutline ? 'transparent' : 'transparent'),
+          backgroundColor: filled ?? (isOutline ? palette.field : 'transparent'),
           borderColor: isOutline ? palette.borderStrong : 'transparent',
           borderWidth: isOutline ? StyleSheet.hairlineWidth : 0,
           opacity: isDisabled ? 0.55 : 1,
           width: fullWidth ? '100%' : undefined,
+          // `shadow-[0_6px_18px_-6px_var(--primary)]` — the accent glow that keeps a
+          // filled action from reading as a flat rectangle on a light backdrop.
+          boxShadow: filled && !isDisabled ? [{ offsetX: 0, offsetY: 6, blurRadius: 18, spreadDistance: -6, color: filled }] : undefined,
         },
         animatedStyle,
         style,
       ]}
     >
+      {/* `bg-gradient-to-b from-primary to-primary-hover`. The gradient carries its
+          own radius so the button needs no `overflow: 'hidden'`, which would clip
+          the glow above. */}
+      {variant === 'primary' ? (
+        <LinearGradient
+          colors={[palette.primary, palette.primaryHover]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
+        />
+      ) : null}
       {loading ? (
         <ActivityIndicator color={fg} />
       ) : (

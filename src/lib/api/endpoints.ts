@@ -64,9 +64,6 @@ export interface LoginResponse {
 export const auth = {
   login: (email: string, password: string, code?: string) =>
     apiFetch<LoginResponse>('/auth/login', { method: 'POST', body: { email, password, code } }),
-  /** Dev/demo persona login — returns a real signed bearer token in the body. */
-  loginPersona: (actor: string) =>
-    apiFetch<LoginResponse>('/auth/login', { method: 'POST', body: { actor } }),
   me: () => apiFetch<Me>('/auth/me'),
   logout: () => apiFetch<{ ok: boolean }>('/auth/logout', { method: 'POST' }),
   screens: () => apiFetch<{ screens: { key: string; label: string; group: string }[] }>('/screens'),

@@ -41,7 +41,7 @@ export function Numpad({ value, onChange }: { value: string; onChange: (next: st
           onPress={() => press(key)}
           style={({ pressed }) => [
             styles.key,
-            { backgroundColor: pressed ? palette.surface2 : palette.surface, borderColor: palette.border },
+            { backgroundColor: pressed ? palette.surface2 : palette.field, borderColor: palette.fieldBorder },
           ]}
         >
           {key === '⌫' ? (

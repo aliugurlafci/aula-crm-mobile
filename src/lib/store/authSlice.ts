@@ -136,16 +136,6 @@ export const loginWithCredentials = createAsyncThunk<LoginResult, { email: strin
   },
 );
 
-export const loginPersona = createAsyncThunk<LoginResult, string>('auth/loginPersona', async (actor, { dispatch }) => {
-  try {
-    const res = await auth.loginPersona(actor);
-    const token = res.token ?? takeCapturedSessionToken();
-    return finishLogin(dispatch, token ?? null);
-  } catch (err) {
-    return { ok: false, error: err instanceof ApiRequestError ? err.message : 'Login failed' };
-  }
-});
-
 export const refreshMe = createAsyncThunk('auth/refreshMe', async (_arg, { dispatch }) => {
   try {
     const fresh = await auth.me();

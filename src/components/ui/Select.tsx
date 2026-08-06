@@ -57,7 +57,7 @@ export function Select({
       ) : null}
       <Pressable
         onPress={() => setOpen(true)}
-        style={[styles.field, { backgroundColor: palette.surface2, borderColor: palette.border }]}
+        style={[styles.field, { backgroundColor: palette.field, borderColor: palette.fieldBorder }]}
       >
         {icon ? <Ionicons name={icon} size={18} color={palette.muted} /> : null}
         <Text variant="body" tone={selected ? 'default' : 'muted2'} style={styles.value} numberOfLines={1}>

@@ -33,8 +33,8 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         style={[
           styles.field,
           {
-            backgroundColor: palette.surface2,
-            borderColor: error ? palette.danger : palette.border,
+            backgroundColor: palette.field,
+            borderColor: error ? palette.danger : palette.fieldBorder,
           },
         ]}
       >

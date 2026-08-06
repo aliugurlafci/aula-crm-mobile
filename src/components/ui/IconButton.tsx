@@ -26,7 +26,7 @@ export function IconButton({ icon, onPress, size = 40, color, tint = 'surface', 
         ? palette.danger + '22'
         : tint === 'transparent'
           ? 'transparent'
-          : palette.surface2;
+          : palette.field;
   const fg = color ?? (tint === 'primary' ? palette.primaryForeground : tint === 'danger' ? palette.danger : palette.foreground);
   return (
     <Pressable
@@ -43,7 +43,7 @@ export function IconButton({ icon, onPress, size = 40, color, tint = 'surface', 
           height: size,
           borderRadius: size / 2,
           backgroundColor: bg,
-          borderColor: palette.border,
+          borderColor: tint === 'surface' ? palette.fieldBorder : palette.border,
           opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
         },
         style,

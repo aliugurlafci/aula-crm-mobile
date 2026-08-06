@@ -97,7 +97,7 @@ export function PaymentSheet({
               <Pressable
                 key={amt}
                 onPress={() => setTendered(String(amt))}
-                style={[styles.quickBtn, { borderColor: palette.border, backgroundColor: palette.surface2 }]}
+                style={[styles.quickBtn, { borderColor: palette.fieldBorder, backgroundColor: palette.field }]}
               >
                 <Text variant="label">{money(amt, currency)}</Text>
               </Pressable>

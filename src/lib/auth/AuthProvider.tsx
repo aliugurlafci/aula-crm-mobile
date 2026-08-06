@@ -11,7 +11,6 @@ import { useAppDispatch, useAppSelector } from '@/lib/store';
 import {
   bootstrapAuth,
   loginWithCredentials as loginCredentialsThunk,
-  loginPersona as loginPersonaThunk,
   refreshMe as refreshMeThunk,
   logout as logoutThunk,
   type AuthStatus,
@@ -30,7 +29,6 @@ export interface AuthValue {
   /** True when running on a cached profile without a fresh /auth/me this launch. */
   offline: boolean;
   loginWithCredentials: (email: string, password: string, code?: string) => Promise<LoginResult>;
-  loginPersona: (actor: string) => Promise<LoginResult>;
   refreshMe: () => Promise<void>;
   logout: () => Promise<void>;
   can: (action: string) => boolean;
@@ -66,7 +64,6 @@ export function useAuth(): AuthValue {
       grants,
       offline,
       loginWithCredentials: (email, password, code) => dispatch(loginCredentialsThunk({ email, password, code })).unwrap(),
-      loginPersona: (actor) => dispatch(loginPersonaThunk(actor)).unwrap(),
       refreshMe: () => dispatch(refreshMeThunk()).unwrap(),
       logout: () => dispatch(logoutThunk()).unwrap(),
       can: (action) => can(grants, action),
